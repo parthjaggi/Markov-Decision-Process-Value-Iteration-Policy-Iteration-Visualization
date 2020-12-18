@@ -26,9 +26,9 @@ public class TrafficEnv implements Constant {
 	protected StateT[][][][][] states;
 
 	// CONSTRUCTOR
-	public TrafficEnv() {
-		// stateSizeChange();
-	}
+	// public TrafficEnv() {
+	// 	stateSizeChange();
+	// }
 
 	public TrafficEnv(int max_value, int discretization) {
 		this.max_value = max_value;
@@ -36,6 +36,7 @@ public class TrafficEnv implements Constant {
 		ratio = max_value / discretization;
 		// this.cols = cols;
 		// stateSizeChange();
+		this.modifyStateSize();
 	}
 
 	// SET COLS AND ROWS

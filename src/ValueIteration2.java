@@ -18,7 +18,7 @@ public class ValueIteration2 implements Constant {
 	private float ratio;
 	private float reward;
 	// KEEP TRACK OF OLD UTILITY
-	private double oldUtility[][][][][];
+	private float oldUtility[][][][][];
 
 	// MAXIMUM CHANGE IN UTILITY
 	private double maximumChange;
@@ -38,12 +38,12 @@ public class ValueIteration2 implements Constant {
 		ratio = tr.getRatio();
 
 		// INITIALIZE AUXILLARY ARRAY
-		this.oldUtility = new double[discretization][discretization][discretization][discretization][discretization];
+		this.oldUtility = new float[discretization][discretization][discretization][discretization][discretization];
 		// UPDATE STATES HAVING NEIGHBOR WALLS
 		// gw.updateIsWall();
 
 		// FOR GRAPH PLOTTING
-		final XYSeriesCollection collection = new XYSeriesCollection();
+		// final XYSeriesCollection collection = new XYSeriesCollection();
 		;
 		// final XYSeries series[][] = new XYSeries[gw.getCols()][gw.getRows()];
 		// // INSTANTIATE SERIES AND INITIAL UTILITY PLOTTING (0,0)
@@ -137,9 +137,10 @@ public class ValueIteration2 implements Constant {
 			reward = (i1 - j1) * ratio;
 		} else {
 			// i1, i2, i3 remain the same.
-			i4 = Math.max(Math.round(i4 - 15 / ratio), 0);  // if i4 goes < 0.
-			i5 = Math.min(Math.round(i5 + 15 / ratio), discretization);  // if i5 goes > discretization.
-			reward = 15;
+			int idxToTransfer = Math.min(Math.min(Math.max(Math.round(i4), 0), Math.round(discretization - i5 - 1)), (int) (15 / ratio)); 
+			i4 = Math.round(i4 - idxToTransfer);
+			i5 = Math.round(i5 + idxToTransfer);
+			reward = idxToTransfer * ratio;
 		}
 		return new int[] { j1, j2, j3, i4, i5 };
 		// return new Object[] { j1, j2, j3, i4, i5, reward };
@@ -147,7 +148,7 @@ public class ValueIteration2 implements Constant {
 
 	// U(s) = R(s) + discount*MAX(expected utility of an action)
 	public void updateUtility() {
-		double actionUtility[] = new double[2];
+		float actionUtility[] = new float[2];
 		// double rewards[] = new double[2];
 		int[] nextState;
 		int bestAction;
@@ -168,12 +169,12 @@ public class ValueIteration2 implements Constant {
 							
 							// ACTION: WE
 							nextState = getNextState(i1, i2, i3, i4, i5, WE);
-							actionUtility[WE] = reward + DISCOUNT * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
+							actionUtility[WE] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
 							// rewards[WE] = reward;
 
 							// ACTION: NS
 							nextState = getNextState(i1, i2, i3, i4, i5, NS);
-							actionUtility[NS] = reward + DISCOUNT * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
+							actionUtility[NS] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
 							// rewards[NS] = reward;
 
 							// SET THE ACTION WITH HIGHEST EXPECTED UTILITY

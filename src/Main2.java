@@ -24,8 +24,10 @@ import javax.swing.event.ChangeListener;
  */
 final public class Main2 {
 	// GRIDWORLD AND ALGORITHM
-	static GridWorld gw;
-	static ValueIteration valueIterate;
+	// static GridWorld gw;
+	// static ValueIteration valueIterate;
+	static TrafficEnv tr;
+	static ValueIteration2 valueIterate;
 	static PolicyIteration policyIterate;
 	static boolean policyRunning = false;
 	static boolean valueRunning = false;
@@ -53,11 +55,14 @@ final public class Main2 {
 	// MAIN
 	public static void main(String[] args) {
 
-		gw = new GridWorld(6, 6);
-		valueIterate = new ValueIteration(gw);
-		policyIterate = new PolicyIteration(gw);
+		// gw = new GridWorld(6, 6);
+		tr = new TrafficEnv(50, 10);
+		valueIterate = new ValueIteration2(tr);
+		// policyIterate = new PolicyIteration(gw);
 		System.out.println("RUNNING CZ4046 ASSIGNMENT 1 , AUTHOR: GOH KA HIAN");
-		initializeGui();
+		// initializeGui();
+
+		valueIterate.startIteration();
 		
 	//	uncomment for 100x100 GridWorld
 	//	gw.setColsRowsSize(100);

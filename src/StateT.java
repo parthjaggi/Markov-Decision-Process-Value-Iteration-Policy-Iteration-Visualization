@@ -18,9 +18,9 @@ public class StateT extends JPanel implements Constant {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private double reward;
+	private float reward;
 	// 0 = MOVE UP, 1 = MOVE DOWN, 2 = MOVE LEFT, 3 = MOVE RIGHT
-	private double utility;
+	private float utility;
 	private int bestAction;
 
 	// IF STATE HAS NEIGHBOURING WALL
@@ -35,32 +35,32 @@ public class StateT extends JPanel implements Constant {
 
 	// CONSTRUCTOR
 	public StateT(TrafficEnv tr) {
-		setColor(WHITE);
+		// setColor(WHITE);
 		this.setLayout(new GridBagLayout());
 		text.setFont(new Font("serif", Font.BOLD, 14)); 
 		this.add(text,SwingConstants.CENTER);
-		addMouseListener(new MouseAdapter() {
-			public void mousePressed(MouseEvent e) {
-				if (color == WALL)
-					setColor(WHITE);
-				else if (color == WHITE)
-					setColor(GREEN);
-				else if (color == GREEN)
-					setColor(BROWN);
-				else
-					setColor(WALL);
-				// CHANGES OCCURED, DISABLE SHOWING OF UTILITY AND POLICY BUTTON
-				Main.disableUtilityAndPolicy();
-			}
-		});
+		// addMouseListener(new MouseAdapter() {
+		// 	public void mousePressed(MouseEvent e) {
+		// 		if (color == WALL)
+		// 			setColor(WHITE);
+		// 		else if (color == WHITE)
+		// 			setColor(GREEN);
+		// 		else if (color == GREEN)
+		// 			setColor(BROWN);
+		// 		else
+		// 			setColor(WALL);
+		// 		// CHANGES OCCURED, DISABLE SHOWING OF UTILITY AND POLICY BUTTON
+		// 		Main.disableUtilityAndPolicy();
+		// 	}
+		// });
 	}
 
 	// START OF GETTER AND SETTER
-	public double getReward() {
+	public float getReward() {
 		return reward;
 	}
 
-	public void setReward(double reward) {
+	public void setReward(float reward) {
 		this.reward = reward;
 	}
 
@@ -112,11 +112,11 @@ public class StateT extends JPanel implements Constant {
 		this.text = text;
 	}
 
-	public double getUtility() {
+	public float getUtility() {
 		return utility;
 	}
 
-	public void setUtility(double utility) {
+	public void setUtility(float utility) {
 		this.utility = utility;
 	}
 

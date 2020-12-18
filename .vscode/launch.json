@@ -6,10 +6,22 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Debug",
+            "name": "main-gridworld",
             "request": "launch",
             "mainClass": "Main",
             "projectName": "CZ4046Assigment1 GOH KA HIAN"
+        },
+        {
+            "type": "java",
+            "name": "main-trafficEnv",
+            "request": "launch",
+            "mainClass": "Main2",
+            "projectName": "CZ4046Assigment1 GOH KA HIAN",
+            "vmArgs": [
+                // "-Xmx2048m",
+                // "-Xmx4096m",
+                "-Xmx8192m"
+            ]
         }
     ]
 }
