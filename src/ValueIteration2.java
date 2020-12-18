@@ -166,7 +166,11 @@ public class ValueIteration2 implements Constant {
 	}
 
 	public int getIndexFromState(float q){
-		return (int)Math.round(q / ratio);
+		int index = (int)Math.round(q / ratio);
+		if (index == discretization){
+			index -= 1;
+		}
+		return index;
 	}
 
 	/* 
@@ -202,6 +206,7 @@ public class ValueIteration2 implements Constant {
 		float dq2, dq3;
 		int[] next_states = new int[3];
 		int[] _tempStates = new int[3];
+		
 		if (action == 1){
 			System.out.println("Warning: a=1 case should have been handled in different parts than here!");
 			System.exit(1);
