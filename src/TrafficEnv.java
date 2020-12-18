@@ -18,19 +18,24 @@ public class TrafficEnv implements Constant {
 	private int cols;
 	// Y-AXIS
 	private int rows;
+	private int discretization;
+	private int max_value;
+	private float ratio;
 
 	protected JPanel[][] entireMap;
-	protected State[][] states;
+	protected StateT[][][][][] states;
 
 	// CONSTRUCTOR
 	public TrafficEnv() {
-		stateSizeChange();
+		// stateSizeChange();
 	}
 
-	public TrafficEnv(int rows, int cols) {
-		this.rows = rows;
-		this.cols = cols;
-		stateSizeChange();
+	public TrafficEnv(int max_value, int discretization) {
+		this.max_value = max_value;
+		this.discretization = discretization;
+		ratio = max_value / discretization;
+		// this.cols = cols;
+		// stateSizeChange();
 	}
 
 	// SET COLS AND ROWS
@@ -41,200 +46,100 @@ public class TrafficEnv implements Constant {
 
 	// INITIAL STATES OBJECT AND MAP
 	protected void initiate() {
-		this.removeAll();
-		this.revalidate();
-		this.repaint();
-		this.setLayout(new GridLayout(cols, rows));
-		for (int i = 0; i < cols; i++) {
-			for (int j = 0; j < rows; j++) {
-				states[i][j] = new State(this);
-				states[i][j].setBorder(BorderFactory.createLineBorder(BORDER, 1));
-				entireMap[i][j] = states[i][j];
-			}
-		}
+		// this.removeAll();
+		// this.revalidate();
+		// this.repaint();
+		// this.setLayout(new GridLayout(cols, rows));
+		for (int i1 = 0; i1 < discretization; i1++)
+			for (int i2 = 0; i2 < discretization; i2++)
+				for (int i3 = 0; i3 < discretization; i3++)
+					for (int i4 = 0; i4 < discretization; i4++) 
+						for (int i5 = 0; i5 < discretization; i5++) {
+							states[i1][i2][i3][i4][i5] = new StateT(this);
+							// states[i][j].setBorder(BorderFactory.createLineBorder(BORDER, 1));
+							// entireMap[i][j] = states[i][j];
+						}
+
 		// DIFFERENT FORMAT FOR GUI (ROWS,COLS) INSTEAD OF (COLS,ROWS)
-		for (int i = 0; i < cols; i++)
-			for (int j = 0; j < rows; j++)
-				this.add(states[j][i]);
+		// for (int i = 0; i < cols; i++)
+		// 	for (int j = 0; j < rows; j++)
+		// 		this.add(states[j][i]);
 	}
 
 	// PERFORM UPDATE OF STATE SIZE AND MAP
 	void modifyStateSize() {
-		entireMap = new JPanel[cols][rows];
-		states = new State[cols][rows];
+		// entireMap = new JPanel[cols][rows];
+		states = new StateT[discretization][discretization][discretization][discretization][discretization];
 		initiate();
-		updateIsWall();
+		// updateIsWall();
 	}
 
 	// THERE IS A CHANGE IN STATE SIZE, UPDATE
-	void stateSizeChange() {
-		modifyStateSize();
-		if (!defaultConfig()) {
-			randomizeConfig();
-		}
-	}
+	// void stateSizeChange() {
+	// 	modifyStateSize();
+	// 	if (!defaultConfig()) {
+	// 		randomizeConfig();
+	// 	}
+	// }
 
 	// SET ALL STATES TO 'WHITE'
-	void setEmpty() {
-		for (int i = 0; i < cols; i++)
-			for (int j = 0; j < rows; j++)
-				states[i][j].setColor(WHITE);
-	}
-
-	// RANDOMIZE CONFIGURATION, CHANCES BASED ON DEFAULT CONFIGURATION
-	// PERCENTAGE OF COLOR AND MATH.RANDOM
-	void randomizeConfig() {
-		double r;
-		for (int i = 0; i < cols; i++) {
-			for (int j = 0; j < rows; j++) {
-				r = Math.random();
-				if (r <= (PERCENT_WHITE))
-					states[i][j].setColor(WHITE);
-				else if (r <= (PERCENT_WHITE + PERCENT_GREEN))
-					states[i][j].setColor(GREEN);
-				else if (r <= (PERCENT_WHITE + PERCENT_GREEN + PERCENT_BROWN))
-					states[i][j].setColor(BROWN);
-				else
-					states[i][j].setColor(WALL);
-			}
-		}
-	}
-
-	// RETURN TRUE IF THERE IS AN DEFAULT CONFIGURATION
-	boolean defaultConfig() {
-
-		// (COL,ROW)
-		// THIS CONFIGURATION IS THE REQUIREMENTS FOR CZ4046 ASSIGNMENT 1
-		if (cols == 6 && rows == 6) {
-			// SET WHITE
-			setEmpty();
-			// SET WALL
-			states[1][0].setColor(WALL);
-			states[4][1].setColor(WALL);
-			states[1][4].setColor(WALL);
-			states[2][4].setColor(WALL);
-			states[3][4].setColor(WALL);
-			// SET BROWN
-			states[1][1].setColor(BROWN);
-			states[2][2].setColor(BROWN);
-			states[3][3].setColor(BROWN);
-			states[4][4].setColor(BROWN);
-			states[5][1].setColor(BROWN);
-			// SET GREEN
-			states[0][0].setColor(GREEN);
-			states[2][0].setColor(GREEN);
-			states[5][0].setColor(GREEN);
-			states[3][1].setColor(GREEN);
-			states[4][2].setColor(GREEN);
-			states[5][3].setColor(GREEN);
-
-			return true;
-		}
-		return false;
-	}
-
-	// UPDATE STATES IF THEY HAVE NEIGHBORING WALL
-	public void updateIsWall() {
-		for (int i = 0; i < cols; i++) {
-			for (int j = 0; j < rows; j++) {
-				states[i][j].setNorthWall(false);
-				states[i][j].setWestWall(false);
-				states[i][j].setEastWall(false);
-				states[i][j].setSouthWall(false);
-				// CHECK IF STATE IS NEAR BORDER
-				if (i == 0)
-					states[i][j].setWestWall(true);
-				if (i == cols - 1)
-					states[i][j].setEastWall(true);
-				if (j == 0)
-					states[i][j].setNorthWall(true);
-				if (j == rows - 1)
-					states[i][j].setSouthWall(true);
-
-				// CHECK IF STATE HAS WEST WALL
-				if (i > 0)
-					if (states[i - 1][j].isWall())
-						states[i][j].setWestWall(true);
-				// CHECK IF STATE HAS EAST WALL
-				if (i < cols - 1)
-					if (states[i + 1][j].isWall())
-						states[i][j].setEastWall(true);
-				// CHECK IF STATE HAS NORTH WALL
-				if (j > 0)
-					if (states[i][j - 1].isWall())
-						states[i][j].setNorthWall(true);
-				if (j < rows - 1)
-					if (states[i][j + 1].isWall())
-						states[i][j].setSouthWall(true);
-			}
-		}
-	}
-
-	// RETURN NUMBER OF NON-WALL STATES
-	public int calcNumStates() {
-		int a = 0;
-		for (int i = 0; i < cols; i++) {
-			for (int j = 0; j < rows; j++) {
-				if (states[i][j].isWall())
-					continue;
-				a++;
-			}
-		}
-		return a;
-	}
+	// void setEmpty() {
+	// 	for (int i = 0; i < cols; i++)
+	// 		for (int j = 0; j < rows; j++)
+	// 			states[i][j].setColor(WHITE);
+	// }
 
 	// DISPLAY OPTIMAL POLICY
 	public void displayOptimalPolicy() {
-		for (int i = 0; i < cols; i++) {
-			for (int j = 0; j < rows; j++) {
-				if (states[i][j].isWall())
-					continue;
-				else if (states[i][j].getBestAction() == UP)
-					states[i][j].getText().setText("UP");
-				else if (states[i][j].getBestAction() == DOWN)
-					states[i][j].getText().setText("DOWN");
-				else if (states[i][j].getBestAction() == RIGHT)
-					states[i][j].getText().setText("RIGHT");
-				else if (states[i][j].getBestAction() == LEFT)
-					states[i][j].getText().setText("LEFT");
+		for (int i1 = 0; i1 < discretization; i1++)
+			for (int i2 = 0; i2 < discretization; i2++)
+				for (int i3 = 0; i3 < discretization; i3++)
+					for (int i4 = 0; i4 < discretization; i4++) 
+						for (int i5 = 0; i5 < discretization; i5++) {
+							// if (states[i][j].isWall())
+							// 	continue;
+
+							if (states[i1][i2][i3][i4][i5].getBestAction() == WE)
+								states[i1][i2][i3][i4][i5].getText().setText("WE");
+							else if (states[i1][i2][i3][i4][i5].getBestAction() == NS)
+								states[i1][i2][i3][i4][i5].getText().setText("NS");
 				
-				Main.displayRewardButton.setEnabled(true);
-				Main.displayUtilityButton.setEnabled(true);
-				Main.displayPolicyButton.setEnabled(false);
-			}
-		}
+							// Main.displayRewardButton.setEnabled(true);
+							// Main.displayUtilityButton.setEnabled(true);
+							// Main.displayPolicyButton.setEnabled(false);
+						}
 	}
 
 	// DISPLAY REWARD FOR STATES
-	public void displayReward() {
-		for (int i = 0; i < cols; i++) {
-			for (int j = 0; j < rows; j++) {
-				if (states[i][j].isWall())
-					continue;
-				states[i][j].getText().setText(Double.toString(states[i][j].getReward()));
-				Main.displayRewardButton.setEnabled(false);
-				Main.displayUtilityButton.setEnabled(true);
-				Main.displayPolicyButton.setEnabled(true);
-			}
-		}
-	}
+	// public void displayReward() {
+	// 	for (int i = 0; i < cols; i++) {
+	// 		for (int j = 0; j < rows; j++) {
+	// 			if (states[i][j].isWall())
+	// 				continue;
+	// 			states[i][j].getText().setText(Double.toString(states[i][j].getReward()));
+	// 			Main.displayRewardButton.setEnabled(false);
+	// 			Main.displayUtilityButton.setEnabled(true);
+	// 			Main.displayPolicyButton.setEnabled(true);
+	// 		}
+	// 	}
+	// }
 
 	// DISPLAY UTILITY 4 DECIMAL PLACING
-	public void displayUtility() {
-		for (int i = 0; i < cols; i++) {
-			for (int j = 0; j < rows; j++) {
-				if (states[i][j].isWall())
-					continue;
-				states[i][j].getText().setText(
+	// public void displayUtility() {
+	// 	for (int i = 0; i < cols; i++) {
+	// 		for (int j = 0; j < rows; j++) {
+	// 			if (states[i][j].isWall())
+	// 				continue;
+	// 			states[i][j].getText().setText(
 
-						Double.toString((double) Math.round(states[i][j].getUtility() * 10000) / 10000));
+	// 					Double.toString((double) Math.round(states[i][j].getUtility() * 10000) / 10000));
 
-				Main.displayRewardButton.setEnabled(true);
-				Main.displayUtilityButton.setEnabled(false);
-				Main.displayPolicyButton.setEnabled(true);
-			}
-		}
-	}
+	// 			Main.displayRewardButton.setEnabled(true);
+	// 			Main.displayUtilityButton.setEnabled(false);
+	// 			Main.displayPolicyButton.setEnabled(true);
+	// 		}
+	// 	}
+	// }
 
 	// START OF GETTERS AND SETTERS
 	public int getCols() {
@@ -247,6 +152,18 @@ public class TrafficEnv implements Constant {
 
 	public int getRows() {
 		return rows;
+	}
+
+	public int getDiscretization() {
+		return discretization;
+	}
+
+	public int getMaxValue() {
+		return max_value;
+	}
+
+	public float getRatio() {
+		return ratio;
 	}
 
 	public void setRows(int rows) {

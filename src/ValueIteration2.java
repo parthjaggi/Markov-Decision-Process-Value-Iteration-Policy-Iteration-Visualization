@@ -11,9 +11,14 @@ import org.jfree.data.xy.XYSeriesCollection;
 public class ValueIteration2 implements Constant {
 	static DisplayGraph valueIterationGraph;
 	private int iterationCount;
-	private GridWorld gw;
+	// private GridWorld gw;
+	private TrafficEnv tr;
+	private int discretization;
+	private int max_value;
+	private float ratio;
+	private float reward;
 	// KEEP TRACK OF OLD UTILITY
-	private double oldUtility[][];
+	private double oldUtility[][][][][];
 
 	// MAXIMUM CHANGE IN UTILITY
 	private double maximumChange;
@@ -21,29 +26,32 @@ public class ValueIteration2 implements Constant {
 	static double maximumErrorAllowed = 0.1;
 
 	// CONSTRUCTOR
-	public ValueIteration2(GridWorld gw) {
-		this.gw = gw;
+	public ValueIteration2(TrafficEnv tr) {
+		this.tr = tr;
 	}
 
 	// START VALUE ITERATION
 	public void startIteration() {
 		iterationCount = 0;
+		discretization = tr.getDiscretization();
+		max_value = tr.getMaxValue();
+		ratio = tr.getRatio();
 
 		// INITIALIZE AUXILLARY ARRAY
-		this.oldUtility = new double[gw.getRows()][gw.getCols()];
+		this.oldUtility = new double[discretization][discretization][discretization][discretization][discretization];
 		// UPDATE STATES HAVING NEIGHBOR WALLS
-		gw.updateIsWall();
+		// gw.updateIsWall();
 
 		// FOR GRAPH PLOTTING
 		final XYSeriesCollection collection = new XYSeriesCollection();
 		;
-		final XYSeries series[][] = new XYSeries[gw.getCols()][gw.getRows()];
-		// INSTANTIATE SERIES AND INITIAL UTILITY PLOTTING (0,0)
-		for (int i = 0; i < gw.getCols(); i++)
-			for (int j = 0; j < gw.getRows(); j++) {
-				series[i][j] = new XYSeries("(" + i + "," + j + ")");
-				series[i][j].add(0, 0);
-			}
+		// final XYSeries series[][] = new XYSeries[gw.getCols()][gw.getRows()];
+		// // INSTANTIATE SERIES AND INITIAL UTILITY PLOTTING (0,0)
+		// for (int i = 0; i < gw.getCols(); i++)
+		// 	for (int j = 0; j < gw.getRows(); j++) {
+		// 		series[i][j] = new XYSeries("(" + i + "," + j + ")");
+		// 		series[i][j].add(0, 0);
+		// 	}
 
 		// INITIAL STEP: SET U(S) = 0
 		setUtlityZero();
@@ -60,120 +68,121 @@ public class ValueIteration2 implements Constant {
 
 			// PLOT GRAPH AND CALCULATE MAXIMUM CHANGES IN UTILITY
 			double differences = 0;
-			for (int i = 0; i < gw.getCols(); i++)
-				for (int j = 0; j < gw.getRows(); j++) {
-					series[i][j].add(iterationCount, gw.states[i][j].getUtility());
-					differences = Math.abs(gw.states[i][j].getUtility() - oldUtility[i][j]);
-					if (differences > maximumChange)
-						maximumChange = differences;
-				}
+			for (int i1 = 0; i1 < discretization; i1++)
+				for (int i2 = 0; i2 < discretization; i2++)
+					for (int i3 = 0; i3 < discretization; i3++)
+						for (int i4 = 0; i4 < discretization; i4++) 
+							for (int i5 = 0; i5 < discretization; i5++) {
+								// series[i][j].add(iterationCount, gw.states[i][j].getUtility());
+								differences = Math.abs(tr.states[i1][i2][i3][i4][i5].getUtility() - oldUtility[i1][i2][i3][i4][i5]);
+								if (differences > maximumChange)
+									maximumChange = differences;
+							}
 		} while ((maximumChange) >= (maximumErrorAllowed * (1.0 - DISCOUNT) / DISCOUNT) && !(maximumChange == 0));
 
+		System.out.println("VI has converged");
+
 		// DISPLAY OPTIMAL POLICY
-		gw.displayOptimalPolicy();
+		// gw.displayOptimalPolicy();
 
 		// COMBINE ALL XYSERIES
-		for (int i = 0; i < gw.getCols(); i++)
-			for (int j = 0; j < gw.getRows(); j++) {
-				if (gw.states[i][j].isWall())
-					continue;
-				else
-					collection.addSeries(series[i][j]);
-			}
-		/* DISPLAY GRAPH AND STATISTIC */
-		Main.numIteration.setText("Total Iteration Count: " + iterationCount);
-		Main.numStates.setText("Numbers of states: " + collection.getSeriesCount());
-		valueIterationGraph = new DisplayGraph("Value Iteration (Max error: " + maximumErrorAllowed + ")", collection);
-		valueIterationGraph.setSize(new Dimension(720, 720));
-		valueIterationGraph.setLocationRelativeTo(null);
-		valueIterationGraph.setVisible(true);
+		// for (int i = 0; i < gw.getCols(); i++)
+		// 	for (int j = 0; j < gw.getRows(); j++) {
+		// 		if (gw.states[i][j].isWall())
+		// 			continue;
+		// 		else
+		// 			collection.addSeries(series[i][j]);
+		// 	}
+		// /* DISPLAY GRAPH AND STATISTIC */
+		// Main.numIteration.setText("Total Iteration Count: " + iterationCount);
+		// Main.numStates.setText("Numbers of states: " + collection.getSeriesCount());
+		// valueIterationGraph = new DisplayGraph("Value Iteration (Max error: " + maximumErrorAllowed + ")", collection);
+		// valueIterationGraph.setSize(new Dimension(720, 720));
+		// valueIterationGraph.setLocationRelativeTo(null);
+		// valueIterationGraph.setVisible(true);
 	}
 
 	// SET UTILITY OF ALL STATES TO 0
 	public void setUtlityZero() {
-		for (int i = 0; i < gw.getCols(); i++)
-			for (int j = 0; j < gw.getRows(); j++)
-				gw.states[i][j].setUtility(0);
+		// FOREACH STATE UPDATE THE UTILITY
+		for (int i1 = 0; i1 < discretization; i1++)
+			for (int i2 = 0; i2 < discretization; i2++)
+				for (int i3 = 0; i3 < discretization; i3++)
+					for (int i4 = 0; i4 < discretization; i4++) 
+						for (int i5 = 0; i5 < discretization; i5++) {
+							tr.states[i1][i2][i3][i4][i5].setUtility(0);
+						}
 	}
 
 	// STORE OLD UTILITY VALUES
 	public void storeOldUtility() {
-		for (int i = 0; i < gw.getCols(); i++)
-			for (int j = 0; j < gw.getRows(); j++) {
-				// IGNORE WALL
-				if (gw.states[i][j].isWall())
-					continue;
-				oldUtility[i][j] = gw.states[i][j].getUtility();
-			}
+		// FOREACH STATE UPDATE THE UTILITY
+		for (int i1 = 0; i1 < discretization; i1++)
+			for (int i2 = 0; i2 < discretization; i2++)
+				for (int i3 = 0; i3 < discretization; i3++)
+					for (int i4 = 0; i4 < discretization; i4++) 
+						for (int i5 = 0; i5 < discretization; i5++) {
+							oldUtility[i1][i2][i3][i4][i5] = tr.states[i1][i2][i3][i4][i5].getUtility();
+						}
+	}
+
+	public int[] getNextState(int i1, int i2, int i3, int i4, int i5, int action) {
+		int j1 = i1, j2 = i2, j3 = i3;
+		// float reward = 0;
+
+		if (action == WE) {
+			// solve LP
+			// j1, j2, j3 = solveLP(i1, i2, i3)
+			// i4, i5 remain the same.
+			reward = (i1 - j1) * ratio;
+		} else {
+			// i1, i2, i3 remain the same.
+			i4 = Math.max(Math.round(i4 - 15 / ratio), 0);  // if i4 goes < 0.
+			i5 = Math.min(Math.round(i5 + 15 / ratio), discretization);  // if i5 goes > discretization.
+			reward = 15;
+		}
+		return new int[] { j1, j2, j3, i4, i5 };
+		// return new Object[] { j1, j2, j3, i4, i5, reward };
 	}
 
 	// U(s) = R(s) + discount*MAX(expected utility of an action)
 	public void updateUtility() {
-		double actionUtility[] = new double[4];
+		double actionUtility[] = new double[2];
+		// double rewards[] = new double[2];
+		int[] nextState;
+		int bestAction;
+
 		// FOREACH STATE UPDATE THE UTILITY
-		for (int i = 0; i < gw.getCols(); i++)
-			for (int j = 0; j < gw.getRows(); j++) {
-				// IGNORE UPDATING WALL
-				if (gw.states[i][j].isWall())
-					continue;
-				// RESET AUXILIARY ARRAY
-				Arrays.fill(actionUtility, 0);
+		for (int i1 = 0; i1 < discretization; i1++)
+			for (int i2 = 0; i2 < discretization; i2++)
+				for (int i3 = 0; i3 < discretization; i3++)
+					for (int i4 = 0; i4 < discretization; i4++) 
+						for (int i5 = 0; i5 < discretization; i5++) {
 
-				// if north of state has wall
-				if (gw.states[i][j].isNorthWall()) {
-					actionUtility[UP] += FRONT_CHANCE * oldUtility[i][j];
-					actionUtility[LEFT] += RIGHT_CHANCE * oldUtility[i][j];
-					actionUtility[RIGHT] += LEFT_CHANCE * oldUtility[i][j];
-				} else {// no wall on north
-					actionUtility[UP] += FRONT_CHANCE * oldUtility[i][j - 1];
-					actionUtility[LEFT] += RIGHT_CHANCE * oldUtility[i][j - 1];
-					actionUtility[RIGHT] += LEFT_CHANCE * oldUtility[i][j - 1];
-				}
-				// if south has wall
-				if (gw.states[i][j].isSouthWall()) {
-					actionUtility[DOWN] += FRONT_CHANCE * oldUtility[i][j];
-					actionUtility[LEFT] += LEFT_CHANCE * oldUtility[i][j];
-					actionUtility[RIGHT] += RIGHT_CHANCE * oldUtility[i][j];
-				} else {// no wall on south
-					actionUtility[DOWN] += FRONT_CHANCE * oldUtility[i][j + 1];
-					actionUtility[LEFT] += LEFT_CHANCE * oldUtility[i][j + 1];
-					actionUtility[RIGHT] += RIGHT_CHANCE * oldUtility[i][j + 1];
-				}
-				// if west has wall
-				if (gw.states[i][j].isWestWall()) {
-					actionUtility[DOWN] += RIGHT_CHANCE * oldUtility[i][j];
-					actionUtility[LEFT] += FRONT_CHANCE * oldUtility[i][j];
-					actionUtility[UP] += LEFT_CHANCE * oldUtility[i][j];
-				} else {// no wall on west
-					actionUtility[DOWN] += RIGHT_CHANCE * oldUtility[i - 1][j];
-					actionUtility[LEFT] += FRONT_CHANCE * oldUtility[i - 1][j];
-					actionUtility[UP] += LEFT_CHANCE * oldUtility[i - 1][j];
-				}
-				// if east has wall
-				if (gw.states[i][j].isEastWall()) {
-					actionUtility[DOWN] += LEFT_CHANCE * oldUtility[i][j];
-					actionUtility[RIGHT] += FRONT_CHANCE * oldUtility[i][j];
-					actionUtility[UP] += RIGHT_CHANCE * oldUtility[i][j];
-				} else {// no wall on east
-					actionUtility[DOWN] += LEFT_CHANCE * oldUtility[i + 1][j];
-					actionUtility[RIGHT] += FRONT_CHANCE * oldUtility[i + 1][j];
-					actionUtility[UP] += RIGHT_CHANCE * oldUtility[i + 1][j];
-				}
+							// handle the case when q1 (i1 * ratio) is < 20.
+							if (i1 * ratio < 20)
+								continue;
 
-				// SET THE ACTION WITH HIGHEST EXPECTED UTILITY
-				gw.states[i][j].setBestAction(DOWN);
-				if (actionUtility[UP] > actionUtility[gw.states[i][j].getBestAction()])
-					gw.states[i][j].setBestAction(UP);
-				if (actionUtility[LEFT] > actionUtility[gw.states[i][j].getBestAction()])
-					gw.states[i][j].setBestAction(LEFT);
-				if (actionUtility[RIGHT] > actionUtility[gw.states[i][j].getBestAction()])
-					gw.states[i][j].setBestAction(RIGHT);
+							Arrays.fill(actionUtility, 0);
+							// Arrays.fill(rewards, 0);
+							
+							// ACTION: WE
+							nextState = getNextState(i1, i2, i3, i4, i5, WE);
+							actionUtility[WE] = reward + DISCOUNT * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
+							// rewards[WE] = reward;
 
-				// UPDATE UTILITY BASED ON BELLMAN EQUATION
-				gw.states[i][j].setUtility(
-						gw.states[i][j].getReward() + DISCOUNT * actionUtility[gw.states[i][j].getBestAction()]);
-				// System.out.println("s("+i+","+j+") :" +
-				// gw.states[i][j].getUtility());
+							// ACTION: NS
+							nextState = getNextState(i1, i2, i3, i4, i5, NS);
+							actionUtility[NS] = reward + DISCOUNT * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
+							// rewards[NS] = reward;
+
+							// SET THE ACTION WITH HIGHEST EXPECTED UTILITY
+							bestAction = actionUtility[WE] > actionUtility[NS] ? WE : NS;
+							tr.states[i1][i2][i3][i4][i5].setBestAction(bestAction);
+
+							// UPDATE UTILITY BASED ON BELLMAN EQUATION
+							// tr.states[i1][i2][i3][i4][i5].setUtility(rewards[bestAction] + DISCOUNT * actionUtility[bestAction]);
+							tr.states[i1][i2][i3][i4][i5].setUtility(actionUtility[bestAction]);
 			}
 	}
 
