@@ -1,8 +1,9 @@
-
+import java.util.*;
 import java.util.Arrays;
 import java.awt.Dimension;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import lpsolve.*;
 
 /**
  * @author GOH KA HIAN NANYANG TECHNOLOGICAL UNIVERSITY
@@ -24,6 +25,12 @@ public class ValueIteration2 implements Constant {
 	private double maximumChange;
 	// MAXIMUM ERROR ALLOWED FOR ALGORITHM, DEFAULT 0.1
 	static double maximumErrorAllowed = 0.1;
+
+	// Set the domain
+	String _domain;
+
+	// HashMap to be used in solving LP for Bandwidth problem
+	public final static HashMap<Integer, double[]> _hmAction2Ub = new HashMap<Integer, double[]>();
 
 	// CONSTRUCTOR
 	public ValueIteration2(TrafficEnv tr) {
@@ -132,8 +139,12 @@ public class ValueIteration2 implements Constant {
 
 		if (action == WE) {
 			// solve LP
-			// j1, j2, j3 = solveLP(i1, i2, i3)
+			int[] next_states = new int[3];
+			next_states = optimizedTransition(new int[] {i1, i2, i3}, new int[0], action, "traffic");
 			// i4, i5 remain the same.
+			j1 = next_states[0];
+			j2 = next_states[1];
+			j3 = next_states[2];
 			reward = (i1 - j1) * ratio;
 		} else {
 			// i1, i2, i3 remain the same.
@@ -144,6 +155,215 @@ public class ValueIteration2 implements Constant {
 		}
 		return new int[] { j1, j2, j3, i4, i5 };
 		// return new Object[] { j1, j2, j3, i4, i5, reward };
+	}
+
+
+	public float getStateFromIndex(int i){
+		return (float)(i * ratio);
+	}
+
+	public int getIndexFromState(float q){
+		return (int)Math.round(q / ratio);
+	}
+
+	/* 
+	TODO: when returning the next states, need to consider feasibility with respect to discretization. 
+	*/
+	public int[] optimizedTransition(int[] real_states, int[] binary_states, int action, String domain){
+		_domain = domain.intern();
+
+		if (_domain.equalsIgnoreCase("traffic")){
+			// real_states = (q1, ..., q5), binary_states = (). We need q2, q3 to solve for dq2 and dq3
+			// When (action == 0) (East-West), need to solve an LP; 
+			// whereas for (action == 1), we don't need to solve.. (should be handled in other parts of the code)
+			return optimizedTransitionTraffic(real_states, action);
+		}
+		// else if(_domain.equalsIgnoreCase("reservoir")){
+		// 	// real_states = (l1, l2), binary_states = (r). We need (l1, l2, r, action) to determine the next state.
+		// 	return optimizedTransitionReservoir(real_states, binary_states[0], action);
+		// }
+		// else if(_domain.equalsIgnoreCase("bandwidth")){
+		// 	// real_states = (d), binary_states = (l). action can be an integer from 0 to 6.
+		// 	// The LP does not depend on current state, but the action will determine which links of the graph will be on.
+		// 	return optimizedTransitionBandwidth(real_states[0], binary_states[0], action);
+		// }
+		else{
+			System.out.println("Warning: Unrecognized domain is provided!!");
+			System.exit(1);
+		}
+		return null;
+	}
+
+	public int[] optimizedTransitionTraffic(int[] states, int action){
+		float q1, q2, q3;
+		float dq2, dq3;
+		if (action == 1){
+			System.out.println("Warning: a=1 case should have been handled in different parts than here!");
+			System.exit(1);
+		}
+		q1 = getStateFromIndex(states[0]);
+		q2 = getStateFromIndex(states[1]);
+		q3 = getStateFromIndex(states[2]);
+
+		try {
+			// An LP solver object initialized with 2 variables (no constraints)
+			LpSolve solver = LpSolve.makeLp(0, 2);	
+					
+			// Add constraints
+			solver.strAddConstraint("1 1", LpSolve.LE, 20);
+			solver.strAddConstraint("1 0", LpSolve.LE, 120-q2);
+			solver.strAddConstraint("0 1", LpSolve.LE, 100-q3);
+
+			// Bound constraints
+			solver.setLowbo(0, 0);			// dq2 >= 0
+			solver.setLowbo(1, 0);			// dq3 >= 0
+
+			// Set objective function
+			solver.strSetObjFn("1 1");	// obj = dq2 + dq3
+
+			// Solve the problem
+			solver.solve();
+
+			// Retrieve solution
+			double[] var = solver.getPtrVariables();
+
+			dq2 = (float)var[0];
+			dq3 = (float)var[1];
+			
+			q2 += dq2;
+			q3 += dq3;
+			q1 -= (dq2 + dq3);
+			
+			int[] next_states = new int[3];
+			next_states[0] = getIndexFromState(q1);					// TODO: are these values valid with the current discretization level?
+			next_states[1] = getIndexFromState(q2);
+			next_states[2] = getIndexFromState(q3);
+
+			// delte the problem and free memory
+			solver.deleteLp();
+
+			return next_states;
+
+		}
+		catch (LpSolveException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public double[] optimizedTransitionReservoir(double[] levels, int rain, int action){
+		// real_states = (l1, l2), binary_states = (r). 
+		// We need (l1, l2, r, action) to determine the next state.
+		// action = 0: block the water flow, i.e., q1 = 0. 
+		// action = 1: q1 >= 0
+		double l1, l2;
+		double q1, q2;
+		
+		try {
+			// An LP solver object initialized with 2 variables (no constraints)
+			LpSolve solver = LpSolve.makeLp(0, 2);	
+			
+			// Add constraints
+			double rhs1, rhs2, rhs3, rhs4;
+			rhs1 = 0.98 * levels[0] + 200 * rain - 1000;
+			rhs2 = 0.98 * levels[0] + 200 * rain - 3000;
+			rhs3 = 700 - 0.98 * levels[1] - 200 * rain;
+			rhs4 = 1500 - 0.98 * levels[1] - 200 * rain;
+			solver.strAddConstraint("1 0", LpSolve.LE, rhs1);
+			solver.strAddConstraint("1 0", LpSolve.GE, rhs2);
+			solver.strAddConstraint("1 -1", LpSolve.GE, rhs3);
+			solver.strAddConstraint("1 -1", LpSolve.LE, rhs4);
+
+			// Bound constraints: 0 <= q1 <= 250 * action; 0 <= q2 <= 300
+			solver.setLowbo(0, 0);
+			solver.setUpbo(0, 250 * action);
+			solver.setLowbo(1, 0);
+			solver.setUpbo(1, 300);
+			
+			// Set objective function
+			solver.strSetObjFn("0 1");		// obj = q2
+
+			// Solve the LP
+			solver.solve();
+
+			// Retrieve solution
+			double[] var = solver.getPtrVariables();
+
+			q1 = var[0];
+			q2 = var[1];
+
+			// Compute the state transition and return the next state
+			double[] next_levels = new double[2];
+			next_levels[0] = 0.98 * levels[0] - q1 + 200 * rain;			// TODO: are these values valid with the current discretization level?
+			next_levels[1] = 0.98 * levels[1] + q1 - q2 + 200 * rain;
+			return next_levels;
+		}
+		catch (LpSolveException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public double[] optimizedTransitionBandwidth(double demand, int level, int action){
+		double x_o1, x_o2, x_12, x_1e, x_2e;
+		double ub;
+		double next_demand, dnew;
+
+		double[] upper_bounds = _hmAction2Ub.get(action);
+
+		try {
+			// An LP solver object initialized with 5 variables (no constraints)
+			LpSolve solver = LpSolve.makeLp(0, 5);
+
+			// Add constraints
+			solver.strAddConstraint("1 0 -1 -1 0", LpSolve.EQ, 0);
+			solver.strAddConstraint("0 -1 -1 0 1", LpSolve.EQ, 0);
+
+			
+			// Bound constraints
+			for (int i=0; i<5; i++){
+				ub = upper_bounds[i];
+				solver.setLowbo(i, 0);
+				solver.setUpbo(i, ub);
+			}
+			
+			// Set objective function
+			solver.strSetObjFn("1 1");		// obj = xo1 + xo2
+
+			// Solve the LP
+			solver.solve();
+
+			// Retrieve solution
+			double max_flow = solver.getObjective();
+
+			// Compute the state transition and return the next state
+			dnew = (action == 0)? 1200: 2500;
+			if (demand > max_flow){
+				next_demand = demand - max_flow + dnew;				// TODO: are these values valid with the current discretization level?
+			} else {
+				next_demand = dnew;
+			}
+			return new double[] {next_demand};
+		}
+		catch (LpSolveException e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	private void updateHmAction2Ub(){
+		double[] capacity = {2100, 1800, 1000, 1500, 1700};
+		double[][] edgesInAction = {{1, 0, 0, 1, 0}, {1, 0, 1, 0, 1}, 
+									{0, 1, 0, 0, 1}, {1, 0, 1, 1, 1}, 
+									{1, 1, 0, 1, 1}, {1, 1, 1, 0, 1}, {1, 1, 1, 1, 1}};
+		double[] upper_bounds =  new double[5];
+
+		for (int a=0; a<7; a++){
+			for (int i=0; i<5; i++){
+				upper_bounds[i] = capacity[i] * edgesInAction[a][i];
+			}
+			_hmAction2Ub.put(a, upper_bounds);
+		}
 	}
 
 	// U(s) = R(s) + discount*MAX(expected utility of an action)
