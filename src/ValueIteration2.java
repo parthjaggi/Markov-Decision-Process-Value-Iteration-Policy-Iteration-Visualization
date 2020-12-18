@@ -201,16 +201,17 @@ public class ValueIteration2 implements Constant {
 		float q1, q2, q3;
 		float dq2, dq3;
 		int[] next_states = new int[3];
+		int[] _tempStates = new int[3];
 		if (action == 1){
 			System.out.println("Warning: a=1 case should have been handled in different parts than here!");
 			System.exit(1);
 		}
 		// Check cache
-		next_states = _hmState2NextState.get(states);
-		if (next_states != null){
-			return next_states;
+		_tempStates = _hmState2NextState.get(states);
+		if (_tempStates != null){
+			return _tempStates;
 		}
-		
+
 		q1 = getStateFromIndex(states[0]);
 		q2 = getStateFromIndex(states[1]);
 		q3 = getStateFromIndex(states[2]);
