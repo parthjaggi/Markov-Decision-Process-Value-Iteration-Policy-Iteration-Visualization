@@ -56,14 +56,19 @@ final public class Main2 {
 	public static void main(String[] args) {
 
 		// gw = new GridWorld(6, 6);
-		tr = new TrafficEnv(50, 10);
-		valueIterate = new ValueIteration2(tr);
+		for (int d = 4; d <= 20; d++) {
+			System.out.println("");
+			System.out.println("=========================================================");
+			System.out.println("d: " + d);
+
+			tr = new TrafficEnv(100, d);
+			valueIterate = new ValueIteration2(tr);
+			valueIterate.startIteration();
+		}
 		// policyIterate = new PolicyIteration(gw);
-		System.out.println("RUNNING CZ4046 ASSIGNMENT 1 , AUTHOR: GOH KA HIAN");
+		// System.out.println("RUNNING CZ4046 ASSIGNMENT 1 , AUTHOR: GOH KA HIAN");
 		// initializeGui();
 
-		valueIterate.startIteration();
-		
 	//	uncomment for 100x100 GridWorld
 	//	gw.setColsRowsSize(100);
 	//	gw.stateSizeChange();
