@@ -34,6 +34,10 @@ public interface Constant {
 	static final int LEFT = 2;
 	static final int RIGHT = 3;
 
+	// ACTIONS-TRAFFIC
+	static final int WE = 0;
+	static final int NS = 1;
+
 	// NON-DETERMINISTIC CHANCE OF ACTION
 	static final double RIGHT_CHANCE = 0.1;
 	static final double LEFT_CHANCE = 0.1;
