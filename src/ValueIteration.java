@@ -188,6 +188,9 @@ public class ValueIteration implements Constant {
 			}
 	}
 
+	/* 
+	TODO: when returning the next states, need to consider feasibility with respect to discretization. 
+	*/
 	public double[] optimizedTransition(double[] real_states, int[] binary_states, int action, String domain){
 		_domain = domain.intern();
 
@@ -254,7 +257,7 @@ public class ValueIteration implements Constant {
 			q1 -= (dq2 + dq3);
 			
 			double[] next_states = states;
-			next_states[0] = q1;
+			next_states[0] = q1;					// TODO: are these values valid with the current discretization level?
 			next_states[1] = q2;
 			next_states[2] = q3;
 
@@ -313,7 +316,7 @@ public class ValueIteration implements Constant {
 
 			// Compute the state transition and return the next state
 			double[] next_levels = new double[2];
-			next_levels[0] = 0.98 * levels[0] - q1 + 200 * rain;
+			next_levels[0] = 0.98 * levels[0] - q1 + 200 * rain;			// TODO: are these values valid with the current discretization level?
 			next_levels[1] = 0.98 * levels[1] + q1 - q2 + 200 * rain;
 			return next_levels;
 		}
@@ -358,7 +361,7 @@ public class ValueIteration implements Constant {
 			// Compute the state transition and return the next state
 			dnew = (action == 0)? 1200: 2500;
 			if (demand > max_flow){
-				next_demand = demand - max_flow + dnew;
+				next_demand = demand - max_flow + dnew;				// TODO: are these values valid with the current discretization level?
 			} else {
 				next_demand = dnew;
 			}
