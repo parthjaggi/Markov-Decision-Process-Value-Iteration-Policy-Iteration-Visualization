@@ -179,8 +179,8 @@ public class ValueIteration2 implements Constant {
 
 	public int getIndexFromState(float q){
 		int index = (int)Math.round(q / ratio);
-		if (index == discretization){
-			index -= 1;
+		if (index >= discretization){
+			index = discretization - 1;
 		}
 		return index;
 	}
