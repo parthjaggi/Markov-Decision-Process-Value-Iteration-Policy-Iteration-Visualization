@@ -56,14 +56,19 @@ final public class Main2 {
 	public static void main(String[] args) {
 
 		// gw = new GridWorld(6, 6);
-		tr = new TrafficEnv(50, 10);
-		valueIterate = new ValueIteration2(tr);
+		for (int d = 4; d <= 20; d++) {
+			System.out.println("");
+			System.out.println("=========================================================");
+			System.out.println("d: " + d);
+
+			tr = new TrafficEnv(100, d);
+			valueIterate = new ValueIteration2(tr);
+			valueIterate.startIteration();
+		}
 		// policyIterate = new PolicyIteration(gw);
 		System.out.println("Running discretized MDP with optimized transitions, Author: Parth Jaggi, Jihwan Jeong");
 		// initializeGui();
 
-		valueIterate.startIteration();
-		
 	//	uncomment for 100x100 GridWorld
 	//	gw.setColsRowsSize(100);
 	//	gw.stateSizeChange();

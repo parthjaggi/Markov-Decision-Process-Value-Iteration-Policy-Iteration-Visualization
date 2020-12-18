@@ -66,6 +66,8 @@ public class ValueIteration2 implements Constant {
 		// INITIAL STEP: SET U(S) = 0
 		setUtlityZero();
 
+		long startTime = System.currentTimeMillis();
+
 		// ITERATE UNTIL CONVERGENCE BASED ON maximumErrorAllowed
 		do {
 			iterationCount++;
@@ -89,6 +91,16 @@ public class ValueIteration2 implements Constant {
 									maximumChange = differences;
 							}
 		} while ((maximumChange) >= (maximumErrorAllowed * (1.0 - DISCOUNT) / DISCOUNT) && !(maximumChange == 0));
+
+		long endTime = System.currentTimeMillis();
+		long elapsedTime = endTime - startTime;
+		System.out.println("elapsed time: " + elapsedTime + "ms");
+
+		// Get the Java runtime and Run the garbage collector
+		Runtime runtime = Runtime.getRuntime();
+		runtime.gc();
+		long memory = runtime.totalMemory() - runtime.freeMemory();
+		System.out.println("end memory: " + memory + "bytes");
 
 		System.out.println("VI has converged");
 
@@ -397,11 +409,6 @@ public class ValueIteration2 implements Constant {
 		int[] nextState;
 		int bestAction;
 
-		// Get the Java runtime and Run the garbage collector
-		Runtime runtime = Runtime.getRuntime();
-		runtime.gc();
-		long memory;
-
 		// FOREACH STATE UPDATE THE UTILITY
 		for (int i1 = 0; i1 < discretization; i1++)
 			for (int i2 = 0; i2 < discretization; i2++)
@@ -412,12 +419,6 @@ public class ValueIteration2 implements Constant {
 							// handle the case when q1 (i1 * ratio) is < 20.
 							if (i1 * ratio < 20)
 								continue;
-
-							// // Calculate and print the used memory at intervals.
-							// if (i2 == 0 && i3 == 0 && i4 == 0 && i5 == 0) {
-							// 	memory = runtime.totalMemory() - runtime.freeMemory();
-							// 	System.out.println(i1 + ", memory: " + memory);
-							// }
 
 							Arrays.fill(actionUtility, 0);
 							// Arrays.fill(rewards, 0);
@@ -440,13 +441,6 @@ public class ValueIteration2 implements Constant {
 							// tr.states[i1][i2][i3][i4][i5].setUtility(rewards[bestAction] + DISCOUNT * actionUtility[bestAction]);
 							tr.states[i1][i2][i3][i4][i5].setUtility(actionUtility[bestAction]);
 			}
-
-		memory = runtime.totalMemory() - runtime.freeMemory();
-		System.out.println("end memory: " + memory);
-
-		runtime.gc();
-		memory = runtime.totalMemory() - runtime.freeMemory();
-		System.out.println("end memory after gc: " + memory);
 	}
 
 	// //NOT IN USE
