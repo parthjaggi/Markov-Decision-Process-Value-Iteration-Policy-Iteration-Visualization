@@ -32,6 +32,9 @@ public class ValueIteration2 implements Constant {
 	// HashMap to be used in solving LP for Bandwidth problem
 	public final static HashMap<Integer, double[]> _hmAction2Ub = new HashMap<Integer, double[]>();
 
+	// Cache saving LP results
+	public HashMap<int[], int[]> _hmState2NextState = new HashMap<int[], int[]>();
+
 	// CONSTRUCTOR
 	public ValueIteration2(TrafficEnv tr) {
 		this.tr = tr;
@@ -197,10 +200,17 @@ public class ValueIteration2 implements Constant {
 	public int[] optimizedTransitionTraffic(int[] states, int action){
 		float q1, q2, q3;
 		float dq2, dq3;
+		int[] next_states = new int[3];
 		if (action == 1){
 			System.out.println("Warning: a=1 case should have been handled in different parts than here!");
 			System.exit(1);
 		}
+		// Check cache
+		next_states = _hmState2NextState.get(states);
+		if (next_states != null){
+			return next_states;
+		}
+		
 		q1 = getStateFromIndex(states[0]);
 		q2 = getStateFromIndex(states[1]);
 		q3 = getStateFromIndex(states[2]);
@@ -208,18 +218,24 @@ public class ValueIteration2 implements Constant {
 		try {
 			// An LP solver object initialized with 2 variables (no constraints)
 			LpSolve solver = LpSolve.makeLp(0, 2);	
-					
+			
+			// Verbose level
+			solver.setVerbose(LpSolve.CRITICAL);
+
 			// Add constraints
 			solver.strAddConstraint("1 1", LpSolve.LE, 20);
 			solver.strAddConstraint("1 0", LpSolve.LE, 120-q2);
 			solver.strAddConstraint("0 1", LpSolve.LE, 100-q3);
 
 			// Bound constraints
-			solver.setLowbo(0, 0);			// dq2 >= 0
-			solver.setLowbo(1, 0);			// dq3 >= 0
+			solver.setLowbo(1, 0);			// dq2 >= 0
+			solver.setLowbo(2, 0);			// dq3 >= 0
 
 			// Set objective function
 			solver.strSetObjFn("1 1");	// obj = dq2 + dq3
+
+			// Need to maximize
+			solver.setMaxim();
 
 			// Solve the problem
 			solver.solve();
@@ -234,13 +250,15 @@ public class ValueIteration2 implements Constant {
 			q3 += dq3;
 			q1 -= (dq2 + dq3);
 			
-			int[] next_states = new int[3];
 			next_states[0] = getIndexFromState(q1);					// TODO: are these values valid with the current discretization level?
 			next_states[1] = getIndexFromState(q2);
 			next_states[2] = getIndexFromState(q3);
 
 			// delte the problem and free memory
 			solver.deleteLp();
+
+			// Save the result in cache
+			_hmState2NextState.put(states, next_states);
 
 			return next_states;
 
