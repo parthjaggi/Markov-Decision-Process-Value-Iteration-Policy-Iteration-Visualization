@@ -1,8 +1,9 @@
-
+import java.util.*;
 import java.util.Arrays;
 import java.awt.Dimension;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import lpsolve.*;
 
 /**
  * @author GOH KA HIAN NANYANG TECHNOLOGICAL UNIVERSITY
@@ -31,6 +32,10 @@ public class ValueIteration implements Constant {
 
 		// INITIALIZE AUXILLARY ARRAY
 		this.oldUtility = new double[gw.getRows()][gw.getCols()];
+
+		// Initialize action - edge mapping for the bandwidth problem
+		updateHmAction2Ub();
+
 		// UPDATE STATES HAVING NEIGHBOR WALLS
 		gw.updateIsWall();
 
@@ -176,7 +181,6 @@ public class ValueIteration implements Constant {
 				// gw.states[i][j].getUtility());
 			}
 	}
-
 	// //NOT IN USE
 	// public boolean convergence(){
 	// for (int i = 0; i < gw.getRows(); i++)

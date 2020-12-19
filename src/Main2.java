@@ -66,7 +66,7 @@ final public class Main2 {
 			valueIterate.startIteration();
 		}
 		// policyIterate = new PolicyIteration(gw);
-		// System.out.println("RUNNING CZ4046 ASSIGNMENT 1 , AUTHOR: GOH KA HIAN");
+		System.out.println("Running discretized MDP with optimized transitions, Author: Parth Jaggi, Jihwan Jeong");
 		// initializeGui();
 
 	//	uncomment for 100x100 GridWorld
