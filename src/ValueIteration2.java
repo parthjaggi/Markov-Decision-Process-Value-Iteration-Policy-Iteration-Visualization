@@ -1,6 +1,11 @@
+import com.google.gson.Gson;
 import java.util.*;
 import java.util.Arrays;
 import java.awt.Dimension;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import lpsolve.*;
@@ -83,7 +88,7 @@ public class ValueIteration2 implements Constant {
 			for (int i1 = 0; i1 < discretization; i1++)
 				for (int i2 = 0; i2 < discretization; i2++)
 					for (int i3 = 0; i3 < discretization; i3++)
-						for (int i4 = 0; i4 < discretization; i4++) 
+						for (int i4 = 0; i4 < discretization; i4++)
 							for (int i5 = 0; i5 < discretization; i5++) {
 								// series[i][j].add(iterationCount, gw.states[i][j].getUtility());
 								differences = Math.abs(tr.states[i1][i2][i3][i4][i5].getUtility() - oldUtility[i1][i2][i3][i4][i5]);
@@ -103,6 +108,20 @@ public class ValueIteration2 implements Constant {
 		System.out.println("end memory: " + memory + "bytes");
 
 		System.out.println("VI has converged");
+
+		// SAVE TO DISK
+		storeOldUtility();
+		Gson gson = new Gson();
+		String oldUtilityJson = gson.toJson(oldUtility);
+
+		try {
+			String fileName = "./results/" + discretization + ".txt";
+			BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+			writer.write(oldUtilityJson);
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		// DISPLAY OPTIMAL POLICY
 		// gw.displayOptimalPolicy();
