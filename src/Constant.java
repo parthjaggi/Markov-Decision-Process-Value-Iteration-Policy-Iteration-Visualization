@@ -26,7 +26,7 @@ public interface Constant {
 	static final double PERCENT_GREEN = 6.0 / 36;
 
 	// DISCOUNT
-	static final double DISCOUNT = 0.99;
+	static final double DISCOUNT = 1.00;
 
 	// ACTIONS
 	static final int UP = 0;

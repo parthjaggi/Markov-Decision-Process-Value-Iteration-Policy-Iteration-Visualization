@@ -61,7 +61,7 @@ final public class Main2 {
 			System.out.println("=========================================================");
 			System.out.println("d: " + d);
 
-			tr = new TrafficEnv(100, d);
+			tr = new TrafficEnv(120, d);
 			valueIterate = new ValueIteration2(tr);
 			valueIterate.startIteration();
 		}
