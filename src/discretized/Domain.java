@@ -322,13 +322,19 @@ public class Domain implements Constant {
 						// ACTION: 0 (block the flow in between two reservoirs)
 						action = 0;
 						nextState = getNextState(new int[]{i1, i2, i3}, action);
-						actionUtility[action] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]];
+						nextState[2] = 0;
+						actionUtility[action] = (float)(1-PROB_RAIN) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
+						nextState[2] = 1;
+						actionUtility[action] += (float)PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
 						// rewards[WE] = reward;
 
 						// ACTION: 1 (allow the flow in between two reservoirs)
 						action = 1;
 						nextState = getNextState(new int[]{i1, i2, i3}, action);
-						actionUtility[action] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]];
+						nextState[2] = 0;											// No rain at next state
+						actionUtility[action] = (float) (1-PROB_RAIN) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
+						nextState[2] = 1;											// Rains at next state
+						actionUtility[action] += (float) PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
 						// rewards[NS] = reward;
 
 						// SET THE ACTION WITH HIGHEST EXPECTED UTILITY
@@ -510,7 +516,15 @@ public class Domain implements Constant {
 					bestAction = -1;
 					for (int a=0; a < 7; a++){
 						nextState = getNextState(new int[]{i1, i2}, a);
-						actionUtility[a] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]];
+						// Stays at the same demand level as the current state at next state
+						nextState[1] = i2;
+						actionUtility[a] = (float) PROB_SAME * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+						
+						// Demand level changes from the current state
+						nextState[1] = (i2 == 0)? 1: 0;
+						actionUtility[a] = (float) (1 - PROB_SAME) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+						
+						// Low demand at next state
 						if (actionUtility[a] > bestValue){
 							bestValue = actionUtility[a];
 							bestAction = a;

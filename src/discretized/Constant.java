@@ -12,4 +12,10 @@ public interface Constant {
 	static final int WE = 0;
 	static final int NS = 1;
 
+	// Transition probabilities for reservoir domain
+	static final double PROB_RAIN = 0.4;
+
+	// Transition probabilities for bandwidth domain
+	static final double PROB_SAME = 0.7;
+
 }
