@@ -25,6 +25,7 @@ public class Domain implements Constant {
 	public static abstract class Environment{
 		public static int discretization;
 		public static int max_value;
+		public static int min_value;
 		public static int num_real_states;
 		public static int num_binary_states;
 		public static int dim_binary_states;
@@ -32,6 +33,7 @@ public class Domain implements Constant {
 		public static float ratio;
 		public static String _domain;
 		public static float reward;
+		public static int _status;
 
 		// Cache saving LP results
 		public static HashMap<int[], int[]> _hmState2NextState = new HashMap<int[], int[]>();
@@ -64,11 +66,23 @@ public class Domain implements Constant {
 		}
 
 		public float getStateFromIndex(int i){
-			return (float)(i * ratio);
+			/*
+			ratio = (max_value - min_value) / discretization
+			state_val = min_value + (max_value - min_value) * (i / discretization)
+			when i = 0: state_val == min_value;
+			when i = discretization: state_val = max_value;
+			*/
+			return min_value + (float) (i * ratio);		
+			// return (float)(i * ratio);
 		}
 
 		public int getIndexFromState(float q){
-			int index = (int)Math.round(q / ratio);
+			/*
+			ratio = (max_value - min_value) / discretization
+			state_val = min_value + i * ratio;
+			i = (state_val - min_value) / ratio;
+			*/
+			int index = (int)Math.round((float) (q - min_value) / ratio);
 			if (index >= discretization){
 				index = discretization - 1;
 			}
@@ -87,11 +101,12 @@ public class Domain implements Constant {
 		public float oldUtility[][][][][];
 
 		// Constructor
-		public TrafficEnv(int max_value, int discretization){
+		public TrafficEnv(int min_value, int max_value, int discretization){
 			// super(max_value, discretization);
+			super.min_value = min_value;		// should be 0
 			super.max_value = max_value;
 			super.discretization = discretization;
-			super.ratio = (float) max_value / discretization;
+			super.ratio = (float) (max_value - min_value) / discretization;
 			this.modifyStateSize();
 		}
 
@@ -277,10 +292,12 @@ public class Domain implements Constant {
 		public float oldUtility[][][];
 
 		// Constructor
-		public ReservoirEnv(int max_value, int discretization){
-			max_value = max_value;
-			discretization = discretization;
-			ratio = (float) max_value / discretization;
+		public ReservoirEnv(int min_value, int max_value, int discretization){
+			// super(max_value, discretization);
+			super.min_value = min_value;
+			super.max_value = max_value;
+			super.discretization = discretization;
+			super.ratio = (float) (max_value - min_value) / discretization;
 			this.modifyStateSize();
 		}
 
@@ -312,37 +329,39 @@ public class Domain implements Constant {
 			for (int i1 = 0; i1 < discretization; i1++)
 				for (int i2 = 0; i2 < discretization; i2++)
 					for (int i3 = 0; i3 < 2; i3++){
-						// TODO: which exceptional cases should be handled?
-						if (i1 * ratio < 20)
+						// If the water level of any of the reservoir goes out of the domain constraints, do nothing
+						if (getStateFromIndex(i1) < 1000 || getStateFromIndex(i2) < 700 || getStateFromIndex(i1) > 3000 || getStateFromIndex(i2) > 1500){
 							continue;
+						}
 
+						// Initialize actionutility array
 						Arrays.fill(actionUtility, 0);
-						// Arrays.fill(rewards, 0);
 						
 						// ACTION: 0 (block the flow in between two reservoirs)
 						action = 0;
 						nextState = getNextState(new int[]{i1, i2, i3}, action);
-						nextState[2] = 0;
-						actionUtility[action] = (float)(1-PROB_RAIN) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
-						nextState[2] = 1;
-						actionUtility[action] += (float)PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
-						// rewards[WE] = reward;
-
+						if (nextState.length != 0){
+							nextState[2] = 0;
+							actionUtility[action] = (float)(1-PROB_RAIN) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
+							nextState[2] = 1;
+							actionUtility[action] += (float)PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
+						}
+						
 						// ACTION: 1 (allow the flow in between two reservoirs)
 						action = 1;
 						nextState = getNextState(new int[]{i1, i2, i3}, action);
-						nextState[2] = 0;											// No rain at next state
-						actionUtility[action] = (float) (1-PROB_RAIN) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
-						nextState[2] = 1;											// Rains at next state
-						actionUtility[action] += (float) PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
-						// rewards[NS] = reward;
-
+						if (nextState.length != 0){
+							nextState[2] = 0;											// No rain at next state
+							actionUtility[action] = (float) (1-PROB_RAIN) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
+							nextState[2] = 1;											// Rains at next state
+							actionUtility[action] += (float) PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
+						}
+						
 						// SET THE ACTION WITH HIGHEST EXPECTED UTILITY
 						bestAction = actionUtility[0] > actionUtility[1] ? 0 : 1;
 						states[i1][i2][i3].setBestAction(bestAction);
 
 						// UPDATE UTILITY BASED ON BELLMAN EQUATION
-						// tr.states[i1][i2][i3][i4][i5].setUtility(rewards[bestAction] + DISCOUNT * actionUtility[bestAction]);
 						states[i1][i2][i3].setUtility(actionUtility[bestAction]);
 				}
 		}
@@ -398,7 +417,12 @@ public class Domain implements Constant {
 			solver.setMaxim();
 
 			// Solve the LP
-			solver.solve();
+			_status = solver.solve();
+
+			// Handle infeasible cases
+			if (_status == LpSolve.INFEASIBLE){
+				return new int[] {};
+			}
 
 			// Retrieve solution
 			double[] var = solver.getPtrVariables();
@@ -472,10 +496,12 @@ public class Domain implements Constant {
 		public static float unit_cost;
 
 		// Constructor
-		public BandwidthEnv(int max_value, int discretization){
-			max_value = max_value;
-			discretization = discretization;
-			ratio = (float) max_value / discretization;
+		public BandwidthEnv(int min_value, int max_value, int discretization){
+			// super(max_value, discretization);
+			super.min_value = min_value;
+			super.max_value = max_value;
+			super.discretization = discretization;
+			super.ratio = (float) max_value / discretization;
 			this.modifyStateSize();
 		}
 
@@ -505,9 +531,9 @@ public class Domain implements Constant {
 			// FOREACH STATE UPDATE THE UTILITY
 			for (int i1 = 0; i1 < discretization; i1++)
 				for (int i2 = 0; i2 < 2; i2++){
-					// TODO: which exceptional cases should be handled?
-					if (i1 * ratio < 20)
-						continue;
+					// All nonnegative states are valid
+					// if (i1 * ratio < 20)
+					// 	continue;
 
 					Arrays.fill(actionUtility, 0);
 					// Arrays.fill(rewards, 0);
@@ -516,25 +542,37 @@ public class Domain implements Constant {
 					bestAction = -1;
 					for (int a=0; a < 7; a++){
 						nextState = getNextState(new int[]{i1, i2}, a);
-						// Stays at the same demand level as the current state at next state
-						nextState[1] = i2;
-						actionUtility[a] = (float) PROB_SAME * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
-						
-						// Demand level changes from the current state
-						nextState[1] = (i2 == 0)? 1: 0;
-						actionUtility[a] = (float) (1 - PROB_SAME) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
-						
-						// Low demand at next state
-						if (actionUtility[a] > bestValue){
-							bestValue = actionUtility[a];
-							bestAction = a;
+						if (nextState.length != 0){
+							// s' = s: Stays at the same demand level as the current state at next state
+							nextState[1] = i2;
+							actionUtility[a] = (float) PROB_SAME * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+							
+							// s' != s: Demand level changes from the current state
+							nextState[1] = (i2 == 0)? 1: 0;
+							actionUtility[a] = (float) (1 - PROB_SAME) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+
+							// Low demand at next state
+							if (actionUtility[a] > bestValue){
+								bestValue = actionUtility[a];
+								bestAction = a;
+							}
+						}
+						else{
+							continue;
 						}
 					}
-					states[i1][i2].setBestAction(bestAction);
 
-					// UPDATE UTILITY BASED ON BELLMAN EQUATION
-					// tr.states[i1][i2][i3][i4][i5].setUtility(rewards[bestAction] + DISCOUNT * actionUtility[bestAction]);
-					states[i1][i2].setUtility(actionUtility[bestAction]);
+					if (bestAction != -1){
+						states[i1][i2].setBestAction(bestAction);
+
+						// UPDATE UTILITY BASED ON BELLMAN EQUATION
+						// tr.states[i1][i2][i3][i4][i5].setUtility(rewards[bestAction] + DISCOUNT * actionUtility[bestAction]);
+						states[i1][i2].setUtility(actionUtility[bestAction]);
+					}
+					else{
+						states[i1][i2].setUtility(0);
+					}
+					
 			}
 		}
 
@@ -583,7 +621,12 @@ public class Domain implements Constant {
 				solver.setMaxim();
 	
 				// Solve the LP
-				solver.solve();
+				_status = solver.solve();
+
+				// Handle infeasibility
+				if (_status == LpSolve.INFEASIBLE){
+					return new int[] {};
+				}
 	
 				// Retrieve solution
 				float max_flow = (float)solver.getObjective();

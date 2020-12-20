@@ -16,14 +16,7 @@ import discretized.Domain.Environment;
  */
 public class ValueIteration2 implements Constant {
 	private int iterationCount;
-	// private GridWorld gw;
 	public Environment env;
-	private int discretization;
-	private int max_value;
-	private float ratio;
-	private float reward;
-	// KEEP TRACK OF OLD UTILITY
-	// private float oldUtility[][][][][];
 
 	// MAXIMUM CHANGE IN UTILITY
 	private double maximumChange;
@@ -46,14 +39,18 @@ public class ValueIteration2 implements Constant {
 			this.env = (BandwidthEnv)env;
 			((BandwidthEnv) this.env).setupBandwidth();
 		}
+		else{
+			System.out.println("Domain not recognized!");
+			System.exit(1);
+		}
 	}
 
 	// START VALUE ITERATION
 	public void startIteration() {
 		iterationCount = 0;
-		discretization = env.getDiscretization();
-		max_value = env.getMaxValue();
-		ratio = env.getRatio();
+		// discretization = env.getDiscretization();
+		// max_value = env.getMaxValue();
+		// ratio = env.getRatio();
 
 		// INITIALIZE AUXILLARY ARRAY
 		// this.oldUtility = new float[discretization][discretization][discretization][discretization][discretization];
@@ -89,6 +86,6 @@ public class ValueIteration2 implements Constant {
 		long memory = runtime.totalMemory() - runtime.freeMemory();
 		System.out.println("end memory: " + memory + "bytes");
 
-		System.out.println("VI has converged");
+		System.out.println("VI has converged (iteration: " + iterationCount + ")");
 	}
 }

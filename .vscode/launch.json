@@ -6,23 +6,39 @@
     "configurations": [
         {
             "type": "java",
-            "name": "main-gridworld",
-            "request": "launch",
-            "mainClass": "Main",
-            "projectName": "CZ4046Assigment1 GOH KA HIAN"
-        },
-        {
-            "type": "java",
             "name": "main-trafficEnv",
             "request": "launch",
             "mainClass": "discretized.Main2",
-            // "projectName": "CZ4046Assigment1 GOH KA HIAN",
             "vmArgs": [
                 // "-Xmx2048m",
                 // "-Xmx4096m",
                 "-Xmx8192m"
             ], 
-            "args": "traffic 100"
+            "args": "traffic 0 100"
+        },
+        {
+            "type": "java",
+            "name": "main-reservoirEnv",
+            "request": "launch",
+            "mainClass": "discretized.Main2",
+            "vmArgs": [
+                // "-Xmx2048m",
+                // "-Xmx4096m",
+                "-Xmx8192m"
+            ], 
+            "args": "reservoir 500 3500"
+        },
+        {
+            "type": "java",
+            "name": "main-bandwidthEnv",
+            "request": "launch",
+            "mainClass": "discretized.Main2",
+            "vmArgs": [
+                // "-Xmx2048m",
+                // "-Xmx4096m",
+                "-Xmx8192m"
+            ], 
+            "args": "bandwidth 0 15000"
         }
     ]
 }

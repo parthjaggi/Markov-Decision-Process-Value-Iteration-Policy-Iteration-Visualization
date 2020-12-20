@@ -22,7 +22,8 @@ final public class Main2 {
 	// MAIN
 	public static void main(String[] args){
 		String domain = args[0];
-		int max_value = Integer.parseInt(args[1]); 
+		int min_value = Integer.parseInt(args[1]);
+		int max_value = Integer.parseInt(args[2]); 
 		_domain = new Domain(domain);
 
 		for (int d = 4; d <= 20; d++) {
@@ -31,13 +32,13 @@ final public class Main2 {
 			System.out.println("d: " + d);
 
 			if (domain.equalsIgnoreCase("traffic")){
-				_env = new TrafficEnv(/*max_value*/ max_value, /*discretization*/ d);
+				_env = new TrafficEnv(/*min_value*/ min_value, /*max_value*/ max_value, /*discretization*/ d);
 			}
 			else if (domain.equalsIgnoreCase("reservoir")){
-				_env = new ReservoirEnv(/*max_value*/ max_value, d);
+				_env = new ReservoirEnv(/*min_value*/ min_value, /*max_value*/ max_value, d);
 			}
 			else if (domain.equalsIgnoreCase("bandwidth")){
-				_env = new BandwidthEnv(/*max_value*/ max_value, d);
+				_env = new BandwidthEnv(/*min_value*/ min_value, /*max_value*/ max_value, d);
 			}
 			else{
 				System.exit(1);
