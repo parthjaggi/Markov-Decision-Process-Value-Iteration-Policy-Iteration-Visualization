@@ -15,15 +15,16 @@ final public class Main2 {
 	// static ValueIteration valueIterate;
 	// static TrafficEnv tr;
 	static Domain _domain;
-	static int max_value;
+	public static int max_value;
+	public static int min_value;
 	static ValueIteration2 valueIterate;
 	static boolean valueRunning = false;
 	public static Environment _env;
 	// MAIN
 	public static void main(String[] args){
 		String domain = args[0];
-		int min_value = Integer.parseInt(args[1]);
-		int max_value = Integer.parseInt(args[2]); 
+		min_value = Integer.parseInt(args[1]);
+		max_value = Integer.parseInt(args[2]); 
 		_domain = new Domain(domain);
 
 		for (int d = 4; d <= 20; d++) {

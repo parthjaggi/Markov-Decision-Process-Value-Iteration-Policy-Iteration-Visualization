@@ -63,6 +63,10 @@ public class ValueIteration2 implements Constant {
 
 		// ITERATE UNTIL CONVERGENCE BASED ON maximumErrorAllowed
 		do {
+			if (iterationCount == 5){
+				break;
+			}
+			
 			iterationCount++;
 			// MAXIMUM CHANGES IN UTILITY
 			maximumChange = 0;

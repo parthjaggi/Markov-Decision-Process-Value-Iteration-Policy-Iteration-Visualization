@@ -6,7 +6,8 @@ package discretized;
  */
 public interface Constant {
 	// DISCOUNT
-	static final double DISCOUNT = 0.99;
+	// static final double DISCOUNT = 0.99;
+	static final double DISCOUNT = 1.0;
 
 	// ACTIONS-TRAFFIC
 	static final int WE = 0;

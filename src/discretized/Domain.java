@@ -22,15 +22,18 @@ public class Domain implements Constant {
 
 	} 
 
-	public static abstract class Environment{
+	public static abstract class Environment implements Constant{
 		public static int discretization;
 		public static int max_value;
 		public static int min_value;
+		public static int max_value2;			// for reservoir domain
+		public static int min_value2;
 		public static int num_real_states;
 		public static int num_binary_states;
 		public static int dim_binary_states;
 		public static int dim_real_states;
-		public static float ratio;
+		public static float ratio;			
+		public static float ratio2;				// for reservoir domain
 		public static String _domain;
 		public static float reward;
 		public static int _status;
@@ -145,14 +148,16 @@ public class Domain implements Constant {
 								
 								// ACTION: WE
 								nextState = getNextState(new int[]{i1, i2, i3, i4, i5}, WE);
-								actionUtility[WE] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
-								// rewards[WE] = reward;
+								if (nextState.length != 0){
+									actionUtility[WE] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
+								}
 
 								// ACTION: NS
 								nextState = getNextState(new int[]{i1, i2, i3, i4, i5}, NS);
-								actionUtility[NS] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
-								// rewards[NS] = reward;
-
+								if (nextState.length != 0){
+									actionUtility[NS] = reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]][nextState[3]][nextState[4]];
+								}
+								
 								// SET THE ACTION WITH HIGHEST EXPECTED UTILITY
 								bestAction = actionUtility[WE] > actionUtility[NS] ? WE : NS;
 								states[i1][i2][i3][i4][i5].setBestAction(bestAction);
@@ -217,6 +222,11 @@ public class Domain implements Constant {
 				// Solve the problem
 				solver.solve();
 	
+				// Handle infeasible cases
+				if (_status == LpSolve.INFEASIBLE){
+					return new int[] {};
+				}
+
 				// Retrieve solution
 				double[] var = solver.getPtrVariables();
 	
@@ -294,10 +304,13 @@ public class Domain implements Constant {
 		// Constructor
 		public ReservoirEnv(int min_value, int max_value, int discretization){
 			// super(max_value, discretization);
-			super.min_value = min_value;
-			super.max_value = max_value;
+			super.min_value = 800;
+			super.max_value = 3200;
+			super.min_value2 = 600;
+			super.max_value2 = 1600;
 			super.discretization = discretization;
 			super.ratio = (float) (max_value - min_value) / discretization;
+			super.ratio2 = (float) (max_value2 - min_value2) / discretization;
 			this.modifyStateSize();
 		}
 
@@ -317,6 +330,37 @@ public class Domain implements Constant {
 			initiate();
 		}
 
+		public int[] getIndexFromState(float[] states){
+			/*
+			ratio = (max_value - min_value) / discretization
+			state_val = min_value + i * ratio;
+			i = (state_val - min_value) / ratio;
+			*/
+			int index1 = (int)Math.round((float) (states[0] - min_value) / ratio);
+			if (index1 >= discretization){
+				index1 = discretization - 1;
+			}
+			int index2 = (int)Math.round((float) (states[1] - min_value2) / ratio2);
+			if (index2 >= discretization){
+				index2 = discretization - 1;
+			}
+			return new int[] {index1, index2};
+		}
+
+		public float[] getStateFromIndex(int[] i1i2){
+			/*
+			ratio = (max_value - min_value) / discretization
+			state_val = min_value + (max_value - min_value) * (i / discretization)
+			when i = 0: state_val == min_value;
+			when i = discretization: state_val = max_value;
+			*/
+			float state1 = (float) min_value + i1i2[0] * ratio;
+			float state2 = (float) min_value2 + i1i2[1] * ratio2;
+
+			return new float[] {state1, state2};
+			// return (float)(i * ratio);
+		}
+
 		// U(s) = R(s) + discount*MAX(expected utility of an action)
 		public void updateUtility() {
 			float actionUtility[] = new float[2];
@@ -330,9 +374,10 @@ public class Domain implements Constant {
 				for (int i2 = 0; i2 < discretization; i2++)
 					for (int i3 = 0; i3 < 2; i3++){
 						// If the water level of any of the reservoir goes out of the domain constraints, do nothing
-						if (getStateFromIndex(i1) < 1000 || getStateFromIndex(i2) < 700 || getStateFromIndex(i1) > 3000 || getStateFromIndex(i2) > 1500){
-							continue;
-						}
+						float[] current_state = getStateFromIndex(new int[]{i1, i2});
+						// if ((current_state[0] < 1000) || (current_state[1] < 700) || (current_state[0] > 3000) || (current_state[1] > 1500)){
+						// 	continue;
+						// }
 
 						// Initialize actionutility array
 						Arrays.fill(actionUtility, 0);
@@ -371,8 +416,10 @@ public class Domain implements Constant {
 		// We need (l1, l2, r, action) to determine the next state.
 		// action = 0: block the water flow, i.e., q1 = 0. 
 		// action = 1: q1 >= 0
+		float[] level;
 		float l1, l2;
 		float q1, q2;
+		int[] next_level = new int[2];
 		int[] next_state = new int[3];
 		int[] _tempState, state_action_pair;
 
@@ -385,14 +432,18 @@ public class Domain implements Constant {
 			return _tempState;
 		}
 
-		l1 = getStateFromIndex(current_state[0]);
-		l2 = getStateFromIndex(current_state[1]);
+		level = getStateFromIndex(new int[] {current_state[0], current_state[1]});
+		l1 = level[0];
+		l2 = level[1];
 		rain = current_state[2];
 
 		try {
 			// An LP solver object initialized with 2 variables (no constraints)
 			LpSolve solver = LpSolve.makeLp(0, 2);	
 			
+			// Verbose level
+			solver.setVerbose(LpSolve.CRITICAL);
+
 			// Add constraints
 			double rhs1, rhs2, rhs3, rhs4;
 			rhs1 = 0.98 * l1 + 200 * rain - 1000;
@@ -405,10 +456,10 @@ public class Domain implements Constant {
 			solver.strAddConstraint("1 -1", LpSolve.LE, rhs4);
 
 			// Bound constraints: 0 <= q1 <= 250 * action; 0 <= q2 <= 300
-			solver.setLowbo(0, 0);
-			solver.setUpbo(0, 250 * action);
 			solver.setLowbo(1, 0);
-			solver.setUpbo(1, 300);
+			solver.setUpbo(1, 250 * action);
+			solver.setLowbo(2, 0);
+			solver.setUpbo(2, 300);
 			
 			// Set objective function
 			solver.strSetObjFn("0 1");		// obj = q2
@@ -437,8 +488,10 @@ public class Domain implements Constant {
 			solver.deleteLp();
 
 			// Compute the state transition and return the next state
-			next_state[0] = getIndexFromState(l1);
-			next_state[1] = getIndexFromState(l2);
+			level = new float[] {l1, l2};
+			next_level = getIndexFromState(level);
+			next_state[0] = next_level[0];
+			next_state[1] = next_level[1];
 			next_state[2] = current_state[2]; 				// TODO: stochastic transition?
 			
 			// Save the result in cache
