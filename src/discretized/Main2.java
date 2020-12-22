@@ -23,31 +23,36 @@ final public class Main2 {
 	// MAIN
 	public static void main(String[] args){
 		String domain = args[0];
+		int num_iteration = Integer.parseInt(args[1]);
 		min_value = Integer.parseInt(args[1]);
 		max_value = Integer.parseInt(args[2]); 
 		_domain = new Domain(domain);
 
-		for (int d = 4; d <= 20; d++) {
+		for (int d = 1000; d <= 1000; d++) {
 			System.out.println("");
 			System.out.println("=========================================================");
 			System.out.println("d: " + d);
 
 			if (domain.equalsIgnoreCase("traffic")){
-				_env = new TrafficEnv(/*min_value*/ min_value, /*max_value*/ max_value, /*discretization*/ d);
+				_env = new TrafficEnv(/*discretization*/ d);
 			}
 			else if (domain.equalsIgnoreCase("reservoir")){
-				_env = new ReservoirEnv(/*min_value*/ min_value, /*max_value*/ max_value, d);
+				_env = new ReservoirEnv(d);
 			}
 			else if (domain.equalsIgnoreCase("bandwidth")){
-				_env = new BandwidthEnv(/*min_value*/ min_value, /*max_value*/ max_value, d);
+				_env = new BandwidthEnv(d);
 			}
 			else{
 				System.exit(1);
 			}
 
+			// Set min, max values and ratio
+			_env.setMinMaxValues(Arrays.copyOfRange(args, 2, args.length), d);
+			_env.setEnvName();
+
 			// tr = new TrafficEnv(100, d);
 			valueIterate = new ValueIteration2(((Environment)_env), domain);
-			valueIterate.startIteration();
+			valueIterate.startIteration(num_iteration);
 		}
 		// policyIterate = new PolicyIteration(gw);
 		System.out.println("Running discretized MDP with optimized transitions, Author: Parth Jaggi, Jihwan Jeong");

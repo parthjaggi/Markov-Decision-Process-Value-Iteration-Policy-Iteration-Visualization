@@ -1,9 +1,15 @@
 package discretized;
+
+import com.google.gson.Gson;
 import java.util.*;
 import java.util.Arrays;
 import java.awt.Dimension;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
+
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import lpsolve.*;
 import discretized.Domain.TrafficEnv;
 import discretized.Domain.ReservoirEnv;
@@ -46,7 +52,7 @@ public class ValueIteration2 implements Constant {
 	}
 
 	// START VALUE ITERATION
-	public void startIteration() {
+	public void startIteration(int max_iteration) {
 		iterationCount = 0;
 		// discretization = env.getDiscretization();
 		// max_value = env.getMaxValue();
@@ -63,10 +69,10 @@ public class ValueIteration2 implements Constant {
 
 		// ITERATE UNTIL CONVERGENCE BASED ON maximumErrorAllowed
 		do {
-			if (iterationCount == 5){
-				break;
-			}
-			
+			// if (iterationCount == max_iteration){
+			// 	break;
+			// }
+
 			iterationCount++;
 			// MAXIMUM CHANGES IN UTILITY
 			maximumChange = 0;
@@ -78,7 +84,8 @@ public class ValueIteration2 implements Constant {
 
 			// CALCULATE MAXIMUM CHANGES IN UTILITY
 			maximumChange = env.computeMaximumDifference();
-		} while ((maximumChange) >= (maximumErrorAllowed * (1.0 - DISCOUNT) / DISCOUNT) && !(maximumChange == 0));
+		} while (iterationCount != max_iteration); 
+		//((maximumChange) >= (maximumErrorAllowed * (1.0 - DISCOUNT) / DISCOUNT) && !(maximumChange == 0));
 
 		long endTime = System.currentTimeMillis();
 		long elapsedTime = endTime - startTime;
@@ -91,5 +98,18 @@ public class ValueIteration2 implements Constant {
 		System.out.println("end memory: " + memory + "bytes");
 
 		System.out.println("VI has converged (iteration: " + iterationCount + ")");
+
+		// SAVE TO DISK
+		env.storeOldUtility();
+		String oldUtilityJson = env.toJson();
+
+		try {
+			String fileName = "./results/" + env._domain + "_" + env.getDiscretization() + ".txt";
+			BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+			writer.write(oldUtilityJson);
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

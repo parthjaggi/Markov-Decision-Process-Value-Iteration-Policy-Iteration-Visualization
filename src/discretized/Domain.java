@@ -1,4 +1,9 @@
 package discretized;
+
+import com.google.gson.Gson;
+
+import org.junit.internal.RealSystem;
+
 import java.lang.Math;
 import lpsolve.*;
 import java.util.*;
@@ -24,16 +29,14 @@ public class Domain implements Constant {
 
 	public static abstract class Environment implements Constant{
 		public static int discretization;
-		public static int max_value;
-		public static int min_value;
-		public static int max_value2;			// for reservoir domain
-		public static int min_value2;
+		public static ArrayList<Float> min_values = new ArrayList<Float>();
+		public static ArrayList<Float> max_values = new ArrayList<Float>();
+		public static ArrayList<Float> ratios = new ArrayList<Float>();
+
 		public static int num_real_states;
 		public static int num_binary_states;
 		public static int dim_binary_states;
 		public static int dim_real_states;
-		public static float ratio;			
-		public static float ratio2;				// for reservoir domain
 		public static String _domain;
 		public static float reward;
 		public static int _status;
@@ -56,40 +59,81 @@ public class Domain implements Constant {
 		public abstract void updateUtility();
 		public abstract double computeMaximumDifference();
 		public abstract int[] optimizedTransition(int[] current_state, int action);
+		public abstract String toJson();
+
+		public void setMinMaxValues(String[] args, int discretization){
+			int num_var;
+			if (this instanceof TrafficEnv){
+				num_var = 5;
+			}
+			else if (this instanceof ReservoirEnv){
+				num_var = 2;
+			}
+			else{
+				num_var = 1;
+			}
+			
+			for (int i=0; i < num_var; i++){
+				float min_val = Float.parseFloat(args[2 * i]);
+				float max_val = Float.parseFloat(args[2 * i + 1]);
+				min_values.add(min_val);
+				max_values.add(max_val);
+				ratios.add((float) (max_val - min_val) / discretization);
+			}
+		}
+
+		public void setEnvName(){
+			if (this instanceof TrafficEnv){
+				_domain = "traffic";
+			} else if (this instanceof ReservoirEnv){
+				_domain = "reservoir";
+			} else {
+				_domain = "bandwidth";
+			}
+		}
+
 		public int getDiscretization() {
 			return discretization;
 		}
 	
-		public int getMaxValue() {
-			return max_value;
-		}
+		// public int getMaxValue() {
+		// 	return max_value;
+		// }
 	
-		public float getRatio() {
-			return ratio;
-		}
+		// public float getRatio() {
+		// 	return ratio;
+		// }
 
-		public float getStateFromIndex(int i){
+		public float[] getStateFromIndex(int[] indices){
 			/*
 			ratio = (max_value - min_value) / discretization
 			state_val = min_value + (max_value - min_value) * (i / discretization)
 			when i = 0: state_val == min_value;
 			when i = discretization: state_val = max_value;
 			*/
-			return min_value + (float) (i * ratio);		
+			float[] states = new float[indices.length];
+			for (int i=0; i<indices.length; i++){
+				states[i] = min_values.get(i) + indices[i] * ratios.get(i);
+			}
+			return states;
 			// return (float)(i * ratio);
 		}
 
-		public int getIndexFromState(float q){
+		public int[] getIndexFromState(float[] states){
 			/*
 			ratio = (max_value - min_value) / discretization
 			state_val = min_value + i * ratio;
 			i = (state_val - min_value) / ratio;
 			*/
-			int index = (int)Math.round((float) (q - min_value) / ratio);
-			if (index >= discretization){
-				index = discretization - 1;
+			int[] indices = new int[states.length];
+			// (int)Math.round((float) (q - min_value) / ratio);
+			for (int i=0; i < states.length; i++){
+				indices[i] = (int) Math.round((float) (states[i] - min_values.get(i)) / ratios.get(i));
+				if (indices[i] >= discretization){
+					indices[i] = discretization - 1;
+				}
 			}
-			return index;
+			return indices;
 		}
 
 		public int[] getNextState(int[] current_state, int action){
@@ -104,13 +148,15 @@ public class Domain implements Constant {
 		public float oldUtility[][][][][];
 
 		// Constructor
-		public TrafficEnv(int min_value, int max_value, int discretization){
-			// super(max_value, discretization);
-			super.min_value = min_value;		// should be 0
-			super.max_value = max_value;
+		public TrafficEnv(int discretization){
 			super.discretization = discretization;
-			super.ratio = (float) (max_value - min_value) / discretization;
+			// super.ratio = (float) (max_value - min_value) / discretization;
 			this.modifyStateSize();
+		}
+
+		public String toJson(){
+			Gson gson = new Gson();
+			return gson.toJson(oldUtility);
 		}
 
 		protected void initiate(){
@@ -140,8 +186,9 @@ public class Domain implements Constant {
 						for (int i4 = 0; i4 < discretization; i4++) 
 							for (int i5 = 0; i5 < discretization; i5++) {
 								// handle the case when q1 (i1 * ratio) is < 20.
-								if (i1 * ratio < 20)
-									continue;
+								// if (i1 * ratio < 20)
+								// 	continue;
+
 
 								Arrays.fill(actionUtility, 0);
 								// Arrays.fill(rewards, 0);
@@ -173,15 +220,16 @@ public class Domain implements Constant {
 			float dq2, dq3;
 			int[] next_state = new int[5];
 			int[] _tempStates;
-			
+			float[] real_state = new float[3];
+
 			if (action == 1){
-				int idxToTransfer = Math.min(Math.min(Math.max(Math.round(current_state[3]), 0), Math.round(discretization - current_state[4] - 1)), (int) (15 / ratio)); 	
+				int idxToTransfer = Math.min(Math.min(Math.max(Math.round(current_state[3]), 0), Math.round(discretization - current_state[4] - 1)), (int) (15 / ratios.get(3))); 	
 				next_state[0] = current_state[0];		// q1, q2, q3 remain the same
 				next_state[1] = current_state[1];
 				next_state[2] = current_state[2];
 				next_state[3] = Math.round(current_state[3] - idxToTransfer);
 				next_state[4] = Math.round(current_state[4] + idxToTransfer);
-				reward = idxToTransfer * ratio;
+				reward = idxToTransfer * ratios.get(3);
 				return next_state;
 			}
 	
@@ -192,10 +240,11 @@ public class Domain implements Constant {
 			if (_tempStates != null){
 				return _tempStates;
 			}
-	
-			q1 = getStateFromIndex(current_state[0]);
-			q2 = getStateFromIndex(current_state[1]);
-			q3 = getStateFromIndex(current_state[2]);
+			
+			real_state = getStateFromIndex(Arrays.copyOfRange(current_state, 0, 3));
+			q1 = real_state[0];
+			q2 = real_state[1];
+			q3 = real_state[2];
 	
 			try {
 				// An LP solver object initialized with 2 variables (no constraints)
@@ -205,14 +254,14 @@ public class Domain implements Constant {
 				solver.setVerbose(LpSolve.CRITICAL);
 	
 				// Add constraints
-				solver.strAddConstraint("1 1", LpSolve.LE, 20);
-				solver.strAddConstraint("1 0", LpSolve.LE, 120-q2);
-				solver.strAddConstraint("0 1", LpSolve.LE, 100-q3);
-	
-				// Bound constraints
-				solver.setLowbo(1, 0);			// dq2 >= 0
-				solver.setLowbo(2, 0);			// dq3 >= 0
-	
+				solver.strAddConstraint("1 1", LpSolve.LE, 20);		// dq2 + dq3 <= 20
+				solver.strAddConstraint("1 0", LpSolve.LE, 120-q2);	// dq2 		 <= 120 - q2
+				solver.strAddConstraint("0 1", LpSolve.LE, 100-q3);	// 		 dq3 <= 100 - q3
+				solver.strAddConstraint("1 1", LpSolve.LE, q1);		// dq2 + dq3 <= q1
+				solver.strAddConstraint("1 0", LpSolve.GE, 0);
+				solver.strAddConstraint("0 1", LpSolve.GE, 0);		// Bound constraints
+				
+				
 				// Set objective function
 				solver.strSetObjFn("1 1");	// obj = dq2 + dq3
 	
@@ -220,7 +269,7 @@ public class Domain implements Constant {
 				solver.setMaxim();
 	
 				// Solve the problem
-				solver.solve();
+				_status = solver.solve();
 	
 				// Handle infeasible cases
 				if (_status == LpSolve.INFEASIBLE){
@@ -237,11 +286,13 @@ public class Domain implements Constant {
 				q3 += dq3;
 				q1 -= (dq2 + dq3);
 				
-				next_state[0] = getIndexFromState(q1);					// TODO: are these values valid with the current discretization level?
-				next_state[1] = getIndexFromState(q2);
-				next_state[2] = getIndexFromState(q3);
+				_tempStates = getIndexFromState(new float[]{q1, q2, q3});
+				next_state[0] = _tempStates[0];
+				next_state[1] = _tempStates[1];
+				next_state[2] = _tempStates[2];
 				next_state[3] = current_state[3];					// q4, q5 remain the same
 				next_state[4] = current_state[4];
+
 				// delte the problem and free memory
 				solver.deleteLp();
 	
@@ -249,7 +300,8 @@ public class Domain implements Constant {
 				_hmState2NextState.put(current_state, next_state);
 	
 				// Compute reward
-				reward = (current_state[0] - next_state[0]) * ratio;
+				// reward = (current_state[0] - next_state[0]) * ratio;
+				reward = dq2 + dq3;
 				return next_state;
 			}
 			catch (LpSolveException e) {
@@ -302,21 +354,19 @@ public class Domain implements Constant {
 		public float oldUtility[][][];
 
 		// Constructor
-		public ReservoirEnv(int min_value, int max_value, int discretization){
-			// super(max_value, discretization);
-			super.min_value = 800;
-			super.max_value = 3200;
-			super.min_value2 = 600;
-			super.max_value2 = 1600;
+		public ReservoirEnv(int discretization){
 			super.discretization = discretization;
-			super.ratio = (float) (max_value - min_value) / discretization;
-			super.ratio2 = (float) (max_value2 - min_value2) / discretization;
+			// super.ratio = (float) (max_value - min_value) / discretization;
+			// super.ratio2 = (float) (max_value2 - min_value2) / discretization;
 			this.modifyStateSize();
 		}
 
-		protected void initiate(){
-			int num_total_states = (int) Math.pow(discretization, dim_real_states) * (int) Math.pow(2, dim_binary_states);
+		public String toJson(){
+			Gson gson = new Gson();
+			return gson.toJson(oldUtility);
+		}
 
+		protected void initiate(){
 			for (int i1 = 0; i1 < discretization; i1++)
 				for (int i2 = 0; i2 < discretization; i2++)
 					for (int i3 = 0; i3 < 2; i3++){
@@ -328,37 +378,6 @@ public class Domain implements Constant {
 		public void modifyStateSize(){
 			states = new DState[discretization][discretization][2];
 			initiate();
-		}
-
-		public int[] getIndexFromState(float[] states){
-			/*
-			ratio = (max_value - min_value) / discretization
-			state_val = min_value + i * ratio;
-			i = (state_val - min_value) / ratio;
-			*/
-			int index1 = (int)Math.round((float) (states[0] - min_value) / ratio);
-			if (index1 >= discretization){
-				index1 = discretization - 1;
-			}
-			int index2 = (int)Math.round((float) (states[1] - min_value2) / ratio2);
-			if (index2 >= discretization){
-				index2 = discretization - 1;
-			}
-			return new int[] {index1, index2};
-		}
-
-		public float[] getStateFromIndex(int[] i1i2){
-			/*
-			ratio = (max_value - min_value) / discretization
-			state_val = min_value + (max_value - min_value) * (i / discretization)
-			when i = 0: state_val == min_value;
-			when i = discretization: state_val = max_value;
-			*/
-			float state1 = (float) min_value + i1i2[0] * ratio;
-			float state2 = (float) min_value2 + i1i2[1] * ratio2;
-
-			return new float[] {state1, state2};
-			// return (float)(i * ratio);
 		}
 
 		// U(s) = R(s) + discount*MAX(expected utility of an action)
@@ -456,11 +475,11 @@ public class Domain implements Constant {
 			solver.strAddConstraint("1 -1", LpSolve.LE, rhs4);
 
 			// Bound constraints: 0 <= q1 <= 250 * action; 0 <= q2 <= 300
-			solver.setLowbo(1, 0);
-			solver.setUpbo(1, 250 * action);
-			solver.setLowbo(2, 0);
-			solver.setUpbo(2, 300);
-			
+			solver.strAddConstraint("1 0", LpSolve.GE, 0);
+			solver.strAddConstraint("0 1", LpSolve.GE, 0);
+			solver.strAddConstraint("1 0", LpSolve.LE, 250 * action);
+			solver.strAddConstraint("0 1", LpSolve.LE, 300);
+
 			// Set objective function
 			solver.strSetObjFn("0 1");		// obj = q2
 
@@ -492,7 +511,7 @@ public class Domain implements Constant {
 			next_level = getIndexFromState(level);
 			next_state[0] = next_level[0];
 			next_state[1] = next_level[1];
-			next_state[2] = current_state[2]; 				// TODO: stochastic transition?
+			next_state[2] = current_state[2]; 				// Note: stochastic transition dealt with in updateUtility method
 			
 			// Save the result in cache
 			_hmState2NextState.put(state_action_pair, next_state);
@@ -547,20 +566,21 @@ public class Domain implements Constant {
 		public static HashMap<Integer, Float> _hmAction2BaseCost = new HashMap<Integer, Float>();
 		public static float[] base_cost;
 		public static float unit_cost;
+		public static double _DISCOUNT = 0.95;
 
 		// Constructor
-		public BandwidthEnv(int min_value, int max_value, int discretization){
-			// super(max_value, discretization);
-			super.min_value = min_value;
-			super.max_value = max_value;
+		public BandwidthEnv(int discretization){
 			super.discretization = discretization;
-			super.ratio = (float) max_value / discretization;
 			this.modifyStateSize();
+			setupBandwidth();
+		}
+
+		public String toJson(){
+			Gson gson = new Gson();
+			return gson.toJson(oldUtility);
 		}
 
 		protected void initiate(){
-			int num_total_states = (int) Math.pow(discretization, dim_real_states) * (int) Math.pow(2, dim_binary_states);
-
 			for (int i1 = 0; i1 < discretization; i1++)
 				for (int i2 = 0; i2 < 2; i2++){
 					states[i1][i2] = new DState(this);
@@ -598,11 +618,11 @@ public class Domain implements Constant {
 						if (nextState.length != 0){
 							// s' = s: Stays at the same demand level as the current state at next state
 							nextState[1] = i2;
-							actionUtility[a] = (float) PROB_SAME * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+							actionUtility[a] = (float) PROB_SAME * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
 							
 							// s' != s: Demand level changes from the current state
 							nextState[1] = (i2 == 0)? 1: 0;
-							actionUtility[a] = (float) (1 - PROB_SAME) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+							actionUtility[a] += (float) (1 - PROB_SAME) * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
 
 							// Low demand at next state
 							if (actionUtility[a] > bestValue){
@@ -648,23 +668,35 @@ public class Domain implements Constant {
 			float[] upper_bounds = _hmAction2Ub.get(action);
 	
 			// Get state value
-			demand = getStateFromIndex(current_state[0]);
+			demand = getStateFromIndex(new int[] {current_state[0]})[0];
 			level = current_state[1];
 	
 			try {
 				// An LP solver object initialized with 5 variables (no constraints)
 				LpSolve solver = LpSolve.makeLp(0, 5);
-	
+
+				// Set verbosity level
+				solver.setVerbose(LpSolve.CRITICAL);
+
 				// Add constraints
 				solver.strAddConstraint("1 0 -1 -1 0", LpSolve.EQ, 0);
 				solver.strAddConstraint("0 -1 -1 0 1", LpSolve.EQ, 0);
 	
 				
+				int[] var_int = new int[5];
 				// Bound constraints
 				for (int i=0; i<5; i++){
+					Arrays.fill(var_int, 0);
+					var_int[i] = 1;
+					String var_str = "";
+					for (int j=0; j<5; j++){
+						var_str += String.format("%d ", var_int[j]);
+					}
+					var_str = var_str.substring(0, var_str.length()-1);
+
 					ub = upper_bounds[i];
-					solver.setLowbo(i, 0);
-					solver.setUpbo(i, ub);
+					solver.strAddConstraint(var_str, LpSolve.GE, 0);
+					solver.strAddConstraint(var_str, LpSolve.LE, ub);
 				}
 				
 				// Set objective function
@@ -691,8 +723,8 @@ public class Domain implements Constant {
 				} else {
 					next_demand = dnew;
 				}
-				next_state[0] = getIndexFromState(next_demand);
-				next_state[1] = current_state[1];					// TODO: stochastic transition?
+				next_state[0] = getIndexFromState(new float[] {next_demand})[0];
+				next_state[1] = current_state[1];					// Note: stochastic transition is handled in updateUtility
 	
 				// Save the result in cache
 				_hmState2NextState.put(state_action_pair, next_state);
@@ -701,10 +733,10 @@ public class Domain implements Constant {
 				float total_base_cost = _hmAction2BaseCost.get(action);
 	
 				// Compute the reward
-				float routed = Math.min(current_state[0], max_flow);
-				reward = 6 * routed - 2 * Math.max(0, current_state[0] - max_flow);
+				float routed = Math.min(demand, max_flow);
+				reward = 6 * routed - 2 * Math.max(0, demand - max_flow);
 				reward -= total_base_cost;
-				reward -= unit_cost * max_flow;
+				reward -= unit_cost * routed;
 				return next_state;
 			}
 			catch (LpSolveException e){
@@ -748,11 +780,11 @@ public class Domain implements Constant {
 										{1, 1, 0, 1, 1}, {1, 1, 1, 0, 1}, {1, 1, 1, 1, 1}};
 			base_cost = new float[] {1000, 800, 600, 750, 800};
 			unit_cost = (float) 1.3;
-			float[] upper_bounds =  new float[5];
-			Float total_base_cost;
+			float total_base_cost;
 	
 			for (int a=0; a<7; a++){
 				total_base_cost = (float)0;
+				float[] upper_bounds =  new float[5];
 				for (int i=0; i<5; i++){
 					upper_bounds[i] = capacity[i] * edgesInAction[a][i];
 					total_base_cost += base_cost[i] * edgesInAction[a][i];

@@ -14,7 +14,7 @@
                 // "-Xmx4096m",
                 "-Xmx8192m"
             ], 
-            "args": "traffic 0 120"
+            "args": "traffic 195 0 100 0 120 0 100 0 100 0 100"
         },
         {
             "type": "java",
@@ -26,7 +26,7 @@
                 // "-Xmx4096m",
                 "-Xmx8192m"
             ], 
-            "args": "reservoir 500 3500"
+            "args": "reservoir 5 500 3200 200 2000"
         },
         {
             "type": "java",
@@ -38,7 +38,7 @@
                 // "-Xmx4096m",
                 "-Xmx8192m"
             ], 
-            "args": "bandwidth 0 15000"
+            "args": "bandwidth 7 1000 20000"
         }
     ]
 }

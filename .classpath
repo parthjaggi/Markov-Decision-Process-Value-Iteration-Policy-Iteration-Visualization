@@ -15,4 +15,5 @@
 	<classpathentry kind="lib" path="lib/swtgraphics2d.jar"/>
 	<classpathentry kind="output" path="bin"/>
 	<classpathentry kind="lib" path="lib/lpsolve55j.jar"/>
+	<classpathentry kind="lib" path="lib/gson-2.8.6.jar"/>
 </classpath>
