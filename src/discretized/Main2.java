@@ -24,8 +24,6 @@ final public class Main2 {
 	public static void main(String[] args){
 		String domain = args[0];
 		int num_iteration = Integer.parseInt(args[1]);
-		min_value = Integer.parseInt(args[1]);
-		max_value = Integer.parseInt(args[2]); 
 		_domain = new Domain(domain);
 
 		for (int d = 1000; d <= 1000; d++) {
