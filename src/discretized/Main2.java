@@ -26,7 +26,7 @@ final public class Main2 {
 		int num_iteration = Integer.parseInt(args[1]);
 		_domain = new Domain(domain);
 
-		for (int d = 1000; d <= 1000; d++) {
+		for (int d = 500; d <= 500; d++) {
 			System.out.println("");
 			System.out.println("=========================================================");
 			System.out.println("d: " + d);

@@ -18,5 +18,6 @@ public interface Constant {
 
 	// Transition probabilities for bandwidth domain
 	static final double PROB_SAME = 0.7;
+	static final double PROB_HIGH = 0.7;
 
 }
