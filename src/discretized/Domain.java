@@ -103,6 +103,27 @@ public class Domain implements Constant {
 		// public float getRatio() {
 		// 	return ratio;
 		// }
+		public float[] getStateFromIndex(int[] indices, int start_index, int end_index){
+			/*
+			ratio = (max_value - min_value) / discretization
+			state_val = min_value + (max_value - min_value) * (i / discretization)
+			when i = 0: state_val == min_value;
+			when i = discretization: state_val = max_value;
+			*/
+			if (indices.length != end_index - start_index){
+				System.out.println("Dimension mismatch! Exiting..");
+				System.exit(1);
+			}
+
+			float[] states = new float[indices.length];
+			int j = 0;
+			for (int i=start_index; i<end_index; i++){
+				states[j] = min_values.get(i) + indices[j] * ratios.get(i);
+				j++;
+			}
+			return states;
+			// return (float)(i * ratio);
+		}
 
 		public float[] getStateFromIndex(int[] indices){
 			/*
@@ -215,21 +236,38 @@ public class Domain implements Constant {
 							}
 		}
 
+		public float determineNumVehTransfer(float q4, float q5){
+			if ((q4 > 15) && (q5 < max_values.get(4) - 15)){
+				return 15;
+			} else if ((q4 > 15) && (q5 >= max_values.get(4) - 15)){
+				return max_values.get(4) - q5;
+			} else if ((q4 <= 15) && (q5 < max_values.get(4) - q4)){
+				return q4;
+			} else {
+				return max_values.get(4) - q5;
+			}
+		}
+
 		public int[] optimizedTransition(int[] current_state, int action){
-			float q1, q2, q3;
+			float q1, q2, q3, q4, q5;
 			float dq2, dq3;
 			int[] next_state = new int[5];
 			int[] _tempStates;
 			float[] real_state = new float[3];
 
 			if (action == 1){
-				int idxToTransfer = Math.min(Math.min(Math.max(Math.round(current_state[3]), 0), Math.round(discretization - current_state[4] - 1)), (int) (15 / ratios.get(3))); 	
+				float[] q4q5 = getStateFromIndex(Arrays.copyOfRange(current_state, 3, 5), 3, 5);
+				q4 = q4q5[0]; q5 = q4q5[1];
+				float numToTransfer = determineNumVehTransfer(q4, q5);
+				int idxToTransfer = Math.round(numToTransfer / ratios.get(4));		// Assuming q4 and q5 ratios are the same
+
+				// int idxToTransfer = Math.min(Math.min(Math.max(Math.round(current_state[3]), 0), Math.round(discretization - current_state[4] - 1)), (int) (15 / ratios.get(3))); 	
 				next_state[0] = current_state[0];		// q1, q2, q3 remain the same
 				next_state[1] = current_state[1];
 				next_state[2] = current_state[2];
 				next_state[3] = Math.round(current_state[3] - idxToTransfer);
-				next_state[4] = Math.round(current_state[4] + idxToTransfer);
-				reward = idxToTransfer * ratios.get(3);
+				next_state[4] = Math.min(current_state[4] + idxToTransfer, discretization - 1);
+				reward = numToTransfer;
 				return next_state;
 			}
 	
@@ -405,9 +443,9 @@ public class Domain implements Constant {
 						action = 0;
 						nextState = getNextState(new int[]{i1, i2, i3}, action);
 						if (nextState.length != 0){
-							nextState[2] = 0;
+							nextState[2] = 0;											// no rain
 							actionUtility[action] = (float)(1-PROB_RAIN) * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
-							nextState[2] = 1;
+							nextState[2] = 1;											// rain
 							actionUtility[action] += (float)PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
 						}
 						
@@ -477,7 +515,7 @@ public class Domain implements Constant {
 			// Bound constraints: 0 <= q1 <= 250 * action; 0 <= q2 <= 300
 			solver.strAddConstraint("1 0", LpSolve.GE, 0);
 			solver.strAddConstraint("0 1", LpSolve.GE, 0);
-			solver.strAddConstraint("1 0", LpSolve.LE, 250 * action);
+			solver.strAddConstraint("1 0", LpSolve.LE, (double) 250 * action);
 			solver.strAddConstraint("0 1", LpSolve.LE, 300);
 
 			// Set objective function
@@ -617,14 +655,20 @@ public class Domain implements Constant {
 						nextState = getNextState(new int[]{i1, i2}, a);
 						if (nextState.length != 0){
 							// s' = s: Stays at the same demand level as the current state at next state
-							nextState[1] = i2;
-							actionUtility[a] = (float) PROB_SAME * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+							// nextState[1] = i2;
+							// actionUtility[a] = (float) PROB_SAME * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
 							
-							// s' != s: Demand level changes from the current state
-							nextState[1] = (i2 == 0)? 1: 0;
-							actionUtility[a] += (float) (1 - PROB_SAME) * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+							nextState[1] = 1;	// High demand
+							actionUtility[a] = (float) PROB_HIGH * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
 
-							// Low demand at next state
+							// s' != s: Demand level changes from the current state
+							// nextState[1] = (i2 == 0)? 1: 0;
+							// actionUtility[a] += (float) (1 - PROB_SAME) * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+
+							nextState[1] = 0;	// Low demand
+							actionUtility[a] += (float) (1 - PROB_HIGH) * (reward + ((float) _DISCOUNT) * oldUtility[nextState[0]][nextState[1]]);
+
+
 							if (actionUtility[a] > bestValue){
 								bestValue = actionUtility[a];
 								bestAction = a;

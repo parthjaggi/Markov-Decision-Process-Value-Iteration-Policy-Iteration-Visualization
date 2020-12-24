@@ -104,7 +104,7 @@ public class ValueIteration2 implements Constant {
 		String oldUtilityJson = env.toJson();
 
 		try {
-			String fileName = "./results/" + env._domain + "_" + env.getDiscretization() + ".txt";
+			String fileName = "./results/" + env._domain + "_d_" + env.getDiscretization() + "_min_" + String.format("%.0f", env.min_values.get(0))+ "_max_" + String.format("%.0f", env.max_values.get(0)) + ".txt";
 			BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 			writer.write(oldUtilityJson);
 			writer.close();
