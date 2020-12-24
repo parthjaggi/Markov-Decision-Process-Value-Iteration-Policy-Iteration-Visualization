@@ -72,6 +72,10 @@ public class Domain implements Constant {
 			else{
 				num_var = 1;
 			}
+
+			min_values = new ArrayList<Float>();
+			max_values = new ArrayList<Float>();
+			ratios = new ArrayList<Float>();
 			
 			for (int i=0; i < num_var; i++){
 				float min_val = Float.parseFloat(args[2 * i]);
