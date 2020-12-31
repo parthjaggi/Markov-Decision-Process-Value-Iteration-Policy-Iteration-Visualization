@@ -20,13 +20,29 @@ final public class Main2 {
 	static ValueIteration2 valueIterate;
 	static boolean valueRunning = false;
 	public static Environment _env;
+	public static HashMap<Integer, long[]> spaceTime = new HashMap<Integer, long[]>();
+	public static HashMap<Integer, long[][]> iterSpaceTime = new HashMap<Integer, long[][]>();
 	// MAIN
 	public static void main(String[] args){
 		String domain = args[0];
 		int num_iteration = Integer.parseInt(args[1]);
 		_domain = new Domain(domain);
 
-		for (int d = 50; d <= 1000; d = d + 50) {
+		int startD = 0, endD = 0, stepD = 0;
+		if (domain.equalsIgnoreCase("traffic")) {
+			startD = 4; endD = 14; stepD = 2;
+		}
+		else if (domain.equalsIgnoreCase("reservoir")) {
+			startD = 50; endD = 1000; stepD = 50;
+		}
+		else if (domain.equalsIgnoreCase("bandwidth")) {
+			startD = 2; endD = 16; stepD = 2;
+		}
+		else {
+			System.exit(1);
+		}
+
+		for (int d = startD; d <= endD; d = d + stepD) {
 			System.out.println("");
 			System.out.println("=========================================================");
 			System.out.println("d: " + d);
@@ -51,13 +67,15 @@ final public class Main2 {
 			// tr = new TrafficEnv(100, d);
 			valueIterate = new ValueIteration2(((Environment)_env), domain);
 			valueIterate.startIteration(num_iteration);
-		}
-		// policyIterate = new PolicyIteration(gw);
-		System.out.println("Running discretized MDP with optimized transitions, Author: Parth Jaggi, Jihwan Jeong");
-		// initializeGui();
 
-	//	uncomment for 100x100 GridWorld
-	//	gw.setColsRowsSize(100);
-	//	gw.stateSizeChange();
+			spaceTime.put(d, new long[]{valueIterate.elapsedTime, valueIterate.memory});
+			iterSpaceTime.put(d, new long[][]{valueIterate.iterationElapsedTime, valueIterate.iterationMemory});
+		}
+
+		String spaceTimeFile = "./results/" + domain + "_space_time.txt";
+		Utils.saveToFile(spaceTime, spaceTimeFile);
+		String iterSpaceTimeFile = "./results/" + domain + "_iter_space_time.txt";
+		Utils.saveToFile(iterSpaceTime, iterSpaceTimeFile);
+		System.out.println("Running discretized MDP with optimized transitions, Author: Parth Jaggi, Jihwan Jeong");
 	}
 }

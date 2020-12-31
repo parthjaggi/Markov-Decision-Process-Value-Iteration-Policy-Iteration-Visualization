@@ -60,6 +60,7 @@ public class Domain implements Constant {
 		public abstract double computeMaximumDifference();
 		public abstract int[] optimizedTransition(int[] current_state, int action);
 		public abstract String toJson();
+		// public abstract String toJson2();
 
 		public void setMinMaxValues(String[] args, int discretization){
 			int num_var;
@@ -82,7 +83,7 @@ public class Domain implements Constant {
 				float max_val = Float.parseFloat(args[2 * i + 1]);
 				min_values.add(min_val);
 				max_values.add(max_val);
-				ratios.add((float) (max_val - min_val) / discretization);
+				ratios.add((float) (max_val - min_val) / (discretization - 1));
 			}
 		}
 
@@ -183,6 +184,13 @@ public class Domain implements Constant {
 			Gson gson = new Gson();
 			return gson.toJson(oldUtility);
 		}
+
+		
+		// public String toJson2() {
+		// 	// Created for feasibility graphs.
+		// 	Gson gson = new Gson();
+		// 	return gson.toJson(oldUtility);
+		// }
 
 		protected void initiate(){
 			for (int i1 = 0; i1 < discretization; i1++)
@@ -393,6 +401,7 @@ public class Domain implements Constant {
 	public static class ReservoirEnv extends Environment{
 		
 		DState[][][] states;
+		// public float isFeasible[][];
 		public float oldUtility[][][];
 
 		// Constructor
@@ -408,6 +417,12 @@ public class Domain implements Constant {
 			return gson.toJson(oldUtility);
 		}
 
+		// public String toJson2() {
+		// 	// Created for feasibility graphs.
+		// 	Gson gson = new Gson();
+		// 	return gson.toJson(isFeasible);
+		// }
+
 		protected void initiate(){
 			for (int i1 = 0; i1 < discretization; i1++)
 				for (int i2 = 0; i2 < discretization; i2++)
@@ -415,6 +430,7 @@ public class Domain implements Constant {
 						states[i1][i2][i3] = new DState(this);
 					}
 					oldUtility = new float[discretization][discretization][2];			
+					// isFeasible = new float[discretization][discretization];
 		}
 
 		public void modifyStateSize(){
@@ -462,6 +478,11 @@ public class Domain implements Constant {
 							nextState[2] = 1;											// Rains at next state
 							actionUtility[action] += (float) PROB_RAIN * (reward + ((float) DISCOUNT) * oldUtility[nextState[0]][nextState[1]][nextState[2]]);
 						}
+						// if (_status == LpSolve.INFEASIBLE){
+						// 	isFeasible[i1][i2] = (float) 0.0;
+						// } else {
+						// 	isFeasible[i1][i2] = (float) 1.0;
+						// }
 						
 						// SET THE ACTION WITH HIGHEST EXPECTED UTILITY
 						bestAction = actionUtility[0] > actionUtility[1] ? 0 : 1;

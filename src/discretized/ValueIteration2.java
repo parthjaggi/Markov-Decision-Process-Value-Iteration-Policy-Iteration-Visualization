@@ -31,6 +31,10 @@ public class ValueIteration2 implements Constant {
 
 	// Set the domain
 	String _domain;
+	public long elapsedTime;
+	public long memory;
+	public long[] iterElapsedTime;
+	public long[] iterMemory;
 
 
 	// CONSTRUCTOR
@@ -53,6 +57,9 @@ public class ValueIteration2 implements Constant {
 
 	// START VALUE ITERATION
 	public void startIteration(int max_iteration) {
+		iterElapsedTime = new long[max_iteration];
+		iterMemory = new long[max_iteration];
+
 		iterationCount = 0;
 		// discretization = env.getDiscretization();
 		// max_value = env.getMaxValue();
@@ -66,12 +73,11 @@ public class ValueIteration2 implements Constant {
 		env.setUtilityZero();
 
 		long startTime = System.currentTimeMillis();
+		Runtime runtime = Runtime.getRuntime();
 
 		// ITERATE UNTIL CONVERGENCE BASED ON maximumErrorAllowed
 		do {
-			// if (iterationCount == max_iteration){
-			// 	break;
-			// }
+			long iterStart = System.currentTimeMillis();
 
 			iterationCount++;
 			// MAXIMUM CHANGES IN UTILITY
@@ -82,19 +88,34 @@ public class ValueIteration2 implements Constant {
 			// UPDATE NEW UTILITY VALUE
 			env.updateUtility();
 
+			// Save LP solution feasibility for debugging
+			// String isFeasibleJson = env.toJson2();
+			// String filepath = "./results/" + env._domain + "_d_" + env.getDiscretization() + "_isFeasible_a_1_r_1.txt";
+			// Utils.saveStringToFile(isFeasibleJson, filepath);
+			// System.exit(1);
+
 			// CALCULATE MAXIMUM CHANGES IN UTILITY
 			maximumChange = env.computeMaximumDifference();
+
+			// Run garbage collector and record memory usage.
+			runtime.gc();
+			memory = runtime.totalMemory() - runtime.freeMemory();
+			iterMemory[iterationCount - 1] = memory;
+
+			long iterEnd = System.currentTimeMillis();
+			iterElapsedTime[iterationCount - 1] = iterEnd - iterStart;
+
+			System.out.println("iterationCount: " + iterationCount + ", maximumChange: " + maximumChange + ", iterElapsed: " + iterElapsedTime + ", memory: " + memory);
 		} while (iterationCount != max_iteration); 
 		//((maximumChange) >= (maximumErrorAllowed * (1.0 - DISCOUNT) / DISCOUNT) && !(maximumChange == 0));
 
 		long endTime = System.currentTimeMillis();
-		long elapsedTime = endTime - startTime;
+		elapsedTime = endTime - startTime;
 		System.out.println("elapsed time: " + elapsedTime + "ms");
 
-		// Get the Java runtime and Run the garbage collector
-		Runtime runtime = Runtime.getRuntime();
+		// Run garbage collector and record memory usage.
 		runtime.gc();
-		long memory = runtime.totalMemory() - runtime.freeMemory();
+		memory = runtime.totalMemory() - runtime.freeMemory();
 		System.out.println("end memory: " + memory + "bytes");
 
 		System.out.println("VI has converged (iteration: " + iterationCount + ")");
