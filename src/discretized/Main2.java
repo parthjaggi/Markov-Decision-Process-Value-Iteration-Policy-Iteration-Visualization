@@ -33,7 +33,7 @@ final public class Main2 {
 			startD = 4; endD = 14; stepD = 2;
 		}
 		else if (domain.equalsIgnoreCase("reservoir")) {
-			startD = 50; endD = 1000; stepD = 50;
+			startD = 50; endD = 500; stepD = 50;
 		}
 		else if (domain.equalsIgnoreCase("bandwidth")) {
 			startD = 2; endD = 16; stepD = 2;
@@ -69,7 +69,7 @@ final public class Main2 {
 			valueIterate.startIteration(num_iteration);
 
 			spaceTime.put(d, new long[]{valueIterate.elapsedTime, valueIterate.memory});
-			iterSpaceTime.put(d, new long[][]{valueIterate.iterationElapsedTime, valueIterate.iterationMemory});
+			iterSpaceTime.put(d, new long[][]{valueIterate.iterElapsedTime, valueIterate.iterMemory});
 		}
 
 		String spaceTimeFile = "./results/" + domain + "_space_time.txt";

@@ -105,7 +105,7 @@ public class ValueIteration2 implements Constant {
 			long iterEnd = System.currentTimeMillis();
 			iterElapsedTime[iterationCount - 1] = iterEnd - iterStart;
 
-			System.out.println("iterationCount: " + iterationCount + ", maximumChange: " + maximumChange + ", iterElapsed: " + iterElapsedTime + ", memory: " + memory);
+			System.out.println("iterationCount: " + iterationCount + ", maximumChange: " + maximumChange + ", iterElapsed: " + (iterEnd - iterStart) + ", memory: " + memory);
 		} while (iterationCount != max_iteration); 
 		//((maximumChange) >= (maximumErrorAllowed * (1.0 - DISCOUNT) / DISCOUNT) && !(maximumChange == 0));
 
