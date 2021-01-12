@@ -88,6 +88,11 @@ public class ValueIteration2 implements Constant {
 			// UPDATE NEW UTILITY VALUE
 			env.updateUtility();
 
+			// FOR SAVING EACH ITERATION'S VALUE. FINAL VALUE IS SAVED OUTSIDE THE LOOP.
+			// String oldUtilityJson = env.toJson();
+			// String filepath = "./results/" + env._domain + "_d_" + env.getDiscretization() + "_i_" + iterationCount + ".txt";
+			// Utils.saveStringToFile(oldUtilityJson, filepath);
+
 			// Save LP solution feasibility for debugging
 			// String isFeasibleJson = env.toJson2();
 			// String filepath = "./results/" + env._domain + "_d_" + env.getDiscretization() + "_isFeasible_a_1_r_1.txt";
@@ -124,13 +129,7 @@ public class ValueIteration2 implements Constant {
 		env.storeOldUtility();
 		String oldUtilityJson = env.toJson();
 
-		try {
-			String fileName = "./results/" + env._domain + "_d_" + env.getDiscretization() + "_min_" + String.format("%.0f", env.min_values.get(0))+ "_max_" + String.format("%.0f", env.max_values.get(0)) + ".txt";
-			BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-			writer.write(oldUtilityJson);
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		String filepath = "./results/" + env._domain + "_d_" + env.getDiscretization() + ".txt";
+		Utils.saveStringToFile(oldUtilityJson, filepath);
 	}
 }

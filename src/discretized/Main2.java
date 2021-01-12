@@ -36,7 +36,7 @@ final public class Main2 {
 			startD = 50; endD = 500; stepD = 50;
 		}
 		else if (domain.equalsIgnoreCase("bandwidth")) {
-			startD = 2; endD = 16; stepD = 2;
+			startD = 1000; endD = 5000; stepD = 400;
 		}
 		else {
 			System.exit(1);
